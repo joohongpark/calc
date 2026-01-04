@@ -12,7 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -92,7 +92,7 @@ public class TransactionService {
         transaction.setExchangeRate(request.getExchangeRate());
         transaction.setTags(request.getTags());
         transaction.setTransactionDate(request.getTransactionDate());
-        transaction.setUpdatedAt(LocalDateTime.now());
+        transaction.setUpdatedAt(Instant.now());
 
         return toResponse(transaction);
     }
@@ -109,7 +109,7 @@ public class TransactionService {
             throw new RuntimeException("접근 권한이 없습니다");
         }
 
-        transaction.setDeletedAt(LocalDateTime.now());
+        transaction.setDeletedAt(Instant.now());
     }
 
     @Transactional(readOnly = true)

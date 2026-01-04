@@ -7,8 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -26,5 +26,5 @@ public class TransactionResponse {
     private BigDecimal exchangeRate;
     private String tags;
     private LocalDate transactionDate;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

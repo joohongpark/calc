@@ -73,8 +73,8 @@ export interface TransactionResponse {
   discountRate?: number;
   exchangeRate?: number;
   tags?: string;
-  transactionDate: string;
-  createdAt: string;
+  transactionDate: string; // YYYY-MM-DD 형식
+  createdAt: string; // ISO 8601 UTC 형식 (예: "2024-01-03T10:30:00Z")
 }
 
 // Auth API

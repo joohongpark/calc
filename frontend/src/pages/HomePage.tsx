@@ -7,6 +7,7 @@ import TransactionDialog from '@/components/TransactionDialog';
 import TransactionDetailDialog from '@/components/TransactionDetailDialog';
 import MonthlyCalendar from '@/components/MonthlyCalendar';
 import { transactionAPI, TransactionResponse } from '@/lib/api';
+import { DateTime } from 'luxon';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
@@ -16,7 +17,7 @@ export default function HomePage() {
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDateTransactions, setSelectedDateTransactions] = useState<TransactionResponse[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<DateTime | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionResponse | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
@@ -44,7 +45,7 @@ export default function HomePage() {
     loadTransactions();
   };
 
-  const handleDateClick = (date: Date, dayTransactions: TransactionResponse[]) => {
+  const handleDateClick = (date: DateTime, dayTransactions: TransactionResponse[]) => {
     if (dayTransactions.length > 0) {
       setSelectedDate(date);
       setSelectedDateTransactions(dayTransactions);
@@ -114,7 +115,7 @@ export default function HomePage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {selectedDate.toLocaleDateString('ko-KR')} 거래 내역
+                {selectedDate.toFormat('yyyy년 M월 d일')} 거래 내역
               </CardTitle>
               <CardDescription>
                 총 {selectedDateTransactions.length}건의 거래

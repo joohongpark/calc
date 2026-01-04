@@ -21,6 +21,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Query("SELECT t FROM Transaction t WHERE t.user.id = :userId " +
            "AND YEAR(t.transactionDate) = :year " +
            "AND MONTH(t.transactionDate) = :month " +
+           "AND t.deletedAt IS NULL " +
            "ORDER BY t.transactionDate DESC")
     List<Transaction> findMonthlyTransactions(
         @Param("userId") Long userId,
@@ -31,6 +32,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     // 기간별 거래 내역 조회
     @Query("SELECT t FROM Transaction t WHERE t.user.id = :userId " +
            "AND t.transactionDate BETWEEN :startDate AND :endDate " +
+           "AND t.deletedAt IS NULL " +
            "ORDER BY t.transactionDate DESC")
     List<Transaction> findByDateRange(
         @Param("userId") Long userId,

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { transactionAPI, TransactionRequest } from '@/lib/api';
+import { getCurrentKSTDate } from '@/lib/dateUtils';
 
 /*
 TransactionDialog 컴포넌트 프로퍼티
@@ -36,8 +37,9 @@ export default function TransactionDialog({
   const [formData, setFormData] = useState<Partial<TransactionRequest>>({
     type,
     currency: '원',
-    transactionDate: new Date().toISOString().split('T')[0], // TODO: 날짜 포맷팅 라이브러리 사용 고려
+    transactionDate: getCurrentKSTDate(), // 한국 시간 기준 현재 날짜
   });
+  const [tagsInput, setTagsInput] = useState(''); // 태그 입력용 별도 state
 
   const [loading, setLoading] = useState(false);
 
@@ -53,7 +55,12 @@ export default function TransactionDialog({
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await transactionAPI.create(formData as TransactionRequest);
+      // 태그를 JSON 배열 문자열로 변환
+      const tags = tagsInput
+        ? JSON.stringify(tagsInput.split(',').map(t => t.trim()).filter(t => t))
+        : undefined;
+
+      await transactionAPI.create({ ...formData, tags } as TransactionRequest);
       alert('거래가 추가되었습니다!');
       onSuccess?.();
       handleClose();
@@ -69,8 +76,9 @@ export default function TransactionDialog({
     setFormData({
       type,
       currency: 'KRW',
-      transactionDate: new Date().toISOString().split('T')[0],
+      transactionDate: getCurrentKSTDate(),
     });
+    setTagsInput(''); // 태그 입력 초기화
     onOpenChange(false);
   };
 
@@ -129,6 +137,8 @@ export default function TransactionDialog({
             <OptionsStep
               formData={formData}
               onChange={setFormData}
+              tagsInput={tagsInput}
+              onTagsChange={setTagsInput}
               onSubmit={handleSubmit}
               onBack={handleBack}
               loading={loading}
@@ -259,12 +269,16 @@ function PaymentMethodStep({
 function OptionsStep({
   formData,
   onChange,
+  tagsInput,
+  onTagsChange,
   onSubmit,
   onBack,
   loading,
 }: {
   formData: Partial<TransactionRequest>;
   onChange: (data: Partial<TransactionRequest>) => void;
+  tagsInput: string;
+  onTagsChange: (tags: string) => void;
   onSubmit: () => void;
   onBack: () => void;
   loading: boolean;
@@ -299,11 +313,8 @@ function OptionsStep({
             <Input
               id="tags"
               placeholder="식비, 외식"
-              value={formData.tags || ''}
-              onChange={(e) => {
-                const tags = e.target.value ? JSON.stringify(e.target.value.split(',').map(t => t.trim())) : '';
-                onChange({ ...formData, tags });
-              }}
+              value={tagsInput}
+              onChange={(e) => onTagsChange(e.target.value)}
             />
           </div>
 

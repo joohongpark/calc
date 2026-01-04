@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { transactionAPI, TransactionRequest, TransactionResponse } from '@/lib/api';
+import { formatKSTDateTime } from '@/lib/dateUtils';
 
 interface TransactionDetailDialogProps {
   open: boolean;
@@ -38,10 +39,20 @@ export default function TransactionDetailDialog({
     transactionDate: transaction.transactionDate,
   });
 
+  // 태그를 문자열 형태로 관리 (JSON 파싱)
+  const [tagsInput, setTagsInput] = useState(
+    transaction.tags ? JSON.parse(transaction.tags).join(', ') : ''
+  );
+
   const handleUpdate = async () => {
     setLoading(true);
     try {
-      await transactionAPI.update(transaction.id, formData as TransactionRequest);
+      // 태그를 JSON 배열 문자열로 변환
+      const tags = tagsInput
+        ? JSON.stringify(tagsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t))
+        : undefined;
+
+      await transactionAPI.update(transaction.id, { ...formData, tags } as TransactionRequest);
       alert('거래가 수정되었습니다!');
       onSuccess?.();
       setIsEditing(false);
@@ -85,6 +96,7 @@ export default function TransactionDetailDialog({
       tags: transaction.tags,
       transactionDate: transaction.transactionDate,
     });
+    setTagsInput(transaction.tags ? JSON.parse(transaction.tags).join(', ') : '');
     onOpenChange(false);
   };
 
@@ -192,13 +204,8 @@ export default function TransactionDetailDialog({
                 <Input
                   id="tags"
                   placeholder="식비, 외식"
-                  value={formData.tags ? JSON.parse(formData.tags).join(', ') : ''}
-                  onChange={(e) => {
-                    const tags = e.target.value
-                      ? JSON.stringify(e.target.value.split(',').map((t) => t.trim()))
-                      : '';
-                    setFormData({ ...formData, tags });
-                  }}
+                  value={tagsInput}
+                  onChange={(e) => setTagsInput(e.target.value)}
                 />
               ) : (
                 <div>{transaction.tags ? JSON.parse(transaction.tags).join(', ') : '-'}</div>
@@ -282,9 +289,9 @@ export default function TransactionDetailDialog({
 
           {/* 등록 시간 */}
           <div className="space-y-2">
-            <Label>등록 시간</Label>
+            <Label>등록 시간 (한국 시간)</Label>
             <div className="text-sm text-muted-foreground">
-              {new Date(transaction.createdAt).toLocaleString('ko-KR')}
+              {formatKSTDateTime(transaction.createdAt)}
             </div>
           </div>
 
