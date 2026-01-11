@@ -29,7 +29,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configure(http))
+            .cors(cors -> cors.disable())
             // 권한 설정
             .authorizeHttpRequests(auth -> auth
                 // 인증 없이 접근 허용할 경로 설정
