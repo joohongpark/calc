@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import TransactionDialog from '@/components/TransactionDialog';
 import TransactionDetailDialog from '@/components/TransactionDetailDialog';
+import { TransactionInput } from '@/components/TransactionInput';
 import MonthlyCalendar from '@/components/MonthlyCalendar';
 import { transactionAPI, TransactionResponse } from '@/lib/api';
 import { DateTime } from 'luxon';
@@ -12,8 +15,8 @@ import { DateTime } from 'luxon';
 export default function HomePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
-  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [isIncomeMode, setIsIncomeMode] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDateTransactions, setSelectedDateTransactions] = useState<TransactionResponse[]>([]);
@@ -85,25 +88,24 @@ export default function HomePage() {
         {/* Quick Actions */}
         <Card>
           <CardHeader>
-            <CardTitle>빠른 입력</CardTitle>
-            <CardDescription>수입 또는 지출을 기록하세요</CardDescription>
+            <div className="flex items-center justify-between">
+              <CardTitle>빠른 입력</CardTitle>
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="income-switch">지출</Label>
+                <Switch
+                  id="income-switch"
+                  checked={isIncomeMode}
+                  onCheckedChange={setIsIncomeMode}
+                />
+                <Label htmlFor="income-switch">수입</Label>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="flex gap-4">
-            <Button
-              className="flex-1"
-              size="lg"
-              onClick={() => setIncomeDialogOpen(true)}
-            >
-              수입 추가
-            </Button>
-            <Button
-              className="flex-1"
-              variant="outline"
-              size="lg"
-              onClick={() => setExpenseDialogOpen(true)}
-            >
-              지출 추가
-            </Button>
+          <CardContent>
+            <TransactionInput
+              type={isIncomeMode ? "INCOME" : "EXPENSE"}
+              onSuccess={handleTransactionSuccess}
+            />
           </CardContent>
         </Card>
 
@@ -137,11 +139,10 @@ export default function HomePage() {
                     </div>
                     <div className="text-right">
                       <p
-                        className={`text-lg font-semibold ${
-                          transaction.type === 'INCOME'
-                            ? 'text-green-600'
-                            : 'text-red-600'
-                        }`}
+                        className={`text-lg font-semibold ${transaction.type === 'INCOME'
+                          ? 'text-green-600'
+                          : 'text-red-600'
+                          }`}
                       >
                         {transaction.type === 'INCOME' ? '+' : '-'}
                         {transaction.amount.toLocaleString()} {transaction.currency}
@@ -183,11 +184,10 @@ export default function HomePage() {
                     </div>
                     <div className="text-right">
                       <p
-                        className={`text-lg font-semibold ${
-                          transaction.type === 'INCOME'
-                            ? 'text-green-600'
-                            : 'text-red-600'
-                        }`}
+                        className={`text-lg font-semibold ${transaction.type === 'INCOME'
+                          ? 'text-green-600'
+                          : 'text-red-600'
+                          }`}
                       >
                         {transaction.type === 'INCOME' ? '+' : '-'}
                         {transaction.amount.toLocaleString()} {transaction.currency}
@@ -201,17 +201,11 @@ export default function HomePage() {
         </Card>
       </div>
 
-      {/* Transaction Dialogs */}
+      {/* Transaction Dialog */}
       <TransactionDialog
-        open={incomeDialogOpen}
-        onOpenChange={setIncomeDialogOpen}
-        type="INCOME"
-        onSuccess={handleTransactionSuccess}
-      />
-      <TransactionDialog
-        open={expenseDialogOpen}
-        onOpenChange={setExpenseDialogOpen}
-        type="EXPENSE"
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        type={isIncomeMode ? "INCOME" : "EXPENSE"}
         onSuccess={handleTransactionSuccess}
       />
 
