@@ -11,6 +11,7 @@ import { normalizeCurrency } from '@/lib/currencyUtils';
 interface TransactionInputProps {
   type: 'INCOME' | 'EXPENSE';
   onSuccess?: () => void;
+  onModeChange?: (isAutoMode: boolean) => void;
 }
 
 interface ParsedTransaction {
@@ -19,13 +20,19 @@ interface ParsedTransaction {
   currency?: string;
 }
 
-export function TransactionInput({ type, onSuccess }: TransactionInputProps) {
+export function TransactionInput({ type, onSuccess, onModeChange }: TransactionInputProps) {
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState('');
   const [autoMode, setAutoMode] = useState(true);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Manual 모드 전용 상태
+  const [manualAmount, setManualAmount] = useState('');
+  const [manualCurrency, setManualCurrency] = useState('KRW');
+  const [manualPaymentMethod, setManualPaymentMethod] = useState('기타');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -117,13 +124,24 @@ export function TransactionInput({ type, onSuccess }: TransactionInputProps) {
           return;
         }
       } else {
-        // Manual 모드: content를 description으로 사용
+        // Manual 모드: 별도 입력 필드의 값 사용
         description = content;
-        // Manual 모드에서는 금액을 별도로 입력받아야 하는데,
-        // 현재는 Auto 모드만 완전히 구현
-        alert('Manual 모드는 아직 구현되지 않았습니다. Auto 모드를 사용해주세요.');
-        setIsSubmitting(false);
-        return;
+        const parsedAmount = parseFloat(manualAmount.replace(/,/g, ''));
+
+        if (!description.trim()) {
+          alert('설명을 입력해주세요.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+          alert('올바른 금액을 입력해주세요.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        amount = parsedAmount;
+        currency = manualCurrency;
       }
 
       // API 호출
@@ -131,7 +149,7 @@ export function TransactionInput({ type, onSuccess }: TransactionInputProps) {
         type,
         amount,
         description,
-        paymentMethod: '기타', // 기본값
+        paymentMethod: autoMode ? '기타' : manualPaymentMethod,
         currency, // 파싱된 통화 코드 사용
         tags: tags.length > 0 ? JSON.stringify(tags) : undefined,
         transactionDate: getCurrentKSTDate()
@@ -141,6 +159,9 @@ export function TransactionInput({ type, onSuccess }: TransactionInputProps) {
       setContent('');
       setTags([]);
       setAttachedFiles([]);
+      setManualAmount('');
+      setManualCurrency('KRW');
+      setManualPaymentMethod('기타');
       onSuccess?.();
 
       // textarea에 포커스
@@ -191,12 +212,56 @@ export function TransactionInput({ type, onSuccess }: TransactionInputProps) {
       {/* 메인 입력 영역 */}
       <Textarea
         ref={textareaRef}
-        placeholder={autoMode ? '예: 마트 20000원' : '내용을 입력하세요'}
+        placeholder={autoMode ? '예: 마트 20000원' : '설명을 입력하세요'}
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
         className="min-h-[80px] resize-none border-0 focus-visible:ring-0 p-0"
       />
+
+      {/* Manual 모드 전용 입력 필드 */}
+      {!autoMode && (
+        <div className="grid grid-cols-3 gap-2">
+          <div className="col-span-2">
+            <input
+              type="text"
+              placeholder="금액"
+              value={manualAmount}
+              onChange={(e) => {
+                // 숫자와 쉼표만 입력 가능
+                const value = e.target.value.replace(/[^\d,]/g, '');
+                setManualAmount(value);
+              }}
+              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <select
+              value={manualCurrency}
+              onChange={(e) => setManualCurrency(e.target.value)}
+              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="KRW">원(₩)</option>
+              <option value="USD">달러($)</option>
+              <option value="EUR">유로(€)</option>
+              <option value="JPY">엔(¥)</option>
+            </select>
+          </div>
+          <div className="col-span-3">
+            <select
+              value={manualPaymentMethod}
+              onChange={(e) => setManualPaymentMethod(e.target.value)}
+              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="기타">기타</option>
+              <option value="현금">현금</option>
+              <option value="신용카드">신용카드</option>
+              <option value="체크카드">체크카드</option>
+              <option value="계좌이체">계좌이체</option>
+            </select>
+          </div>
+        </div>
+      )}
 
       {/* 첨부된 파일 목록 */}
       {attachedFiles.length > 0 && (
@@ -240,11 +305,14 @@ export function TransactionInput({ type, onSuccess }: TransactionInputProps) {
           <div className="flex items-center gap-2">
             <Switch
               checked={autoMode}
-              onCheckedChange={setAutoMode}
+              onCheckedChange={(checked) => {
+                setAutoMode(checked);
+                onModeChange?.(checked);
+              }}
               id="auto-mode"
             />
             <label htmlFor="auto-mode" className="text-sm cursor-pointer">
-              Auto
+              빠른 입력 모드
             </label>
           </div>
         </div>

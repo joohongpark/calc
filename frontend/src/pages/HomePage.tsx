@@ -17,6 +17,7 @@ export default function HomePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isIncomeMode, setIsIncomeMode] = useState(false);
+  const [isAutoMode, setIsAutoMode] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +91,7 @@ export default function HomePage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>빠른 입력</CardTitle>
+              <CardTitle>{isAutoMode ? '빠른 입력 모드' : '일반 입력 모드'}</CardTitle>
               <div className="flex items-center space-x-2">
                 <Label htmlFor="income-switch">지출</Label>
                 <Switch
@@ -106,6 +107,7 @@ export default function HomePage() {
             <TransactionInput
               type={isIncomeMode ? "INCOME" : "EXPENSE"}
               onSuccess={handleTransactionSuccess}
+              onModeChange={setIsAutoMode}
             />
           </CardContent>
         </Card>
