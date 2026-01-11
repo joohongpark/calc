@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { transactionAPI, TransactionRequest, TransactionResponse } from '@/lib/api';
 import { formatKSTDateTime } from '@/lib/dateUtils';
+import { getCurrencySymbol } from '@/lib/currencyUtils';
 
 interface TransactionDetailDialogProps {
   open: boolean;
@@ -140,7 +141,7 @@ export default function TransactionDetailDialog({
               />
             ) : (
               <div className="text-2xl font-bold">
-                {transaction.amount.toLocaleString()} {transaction.currency}
+                {transaction.amount.toLocaleString()}{getCurrencySymbol(transaction.currency)}
               </div>
             )}
           </div>

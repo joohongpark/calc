@@ -7,6 +7,7 @@ import { DateTime } from 'luxon';
 import { DayButton } from 'react-day-picker';
 import { PlusIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getCurrencySymbol } from '@/lib/currencyUtils';
 
 interface MonthlyCalendarProps {
   onDateClick?: (date: DateTime, transactions: TransactionResponse[]) => void;
@@ -210,7 +211,7 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction }: Month
                         }`}
                       >
                         {transaction.type === 'INCOME' ? '+' : '-'}
-                        {transaction.amount.toLocaleString()} {transaction.currency}
+                        {transaction.amount.toLocaleString()}{getCurrencySymbol(transaction.currency)}
                       </div>
                     </div>
                     <div className="text-muted-foreground text-xs mt-1">

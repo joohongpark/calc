@@ -1,6 +1,7 @@
 package com.household.budget.dto;
 
 import com.household.budget.entity.Transaction.TransactionType;
+import com.household.budget.validation.ValidCurrency;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -24,6 +25,7 @@ public class TransactionRequest {
     private String paymentMethod;
 
     @NotBlank(message = "통화는 필수입니다")
+    @ValidCurrency
     private String currency = "KRW";
 
     private BigDecimal originalAmount;

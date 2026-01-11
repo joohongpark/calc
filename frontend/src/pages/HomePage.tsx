@@ -11,6 +11,7 @@ import { TransactionInput } from '@/components/TransactionInput';
 import MonthlyCalendar from '@/components/MonthlyCalendar';
 import { transactionAPI, TransactionResponse } from '@/lib/api';
 import { DateTime } from 'luxon';
+import { getCurrencySymbol } from '@/lib/currencyUtils';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
@@ -145,7 +146,7 @@ export default function HomePage() {
                           }`}
                       >
                         {transaction.type === 'INCOME' ? '+' : '-'}
-                        {transaction.amount.toLocaleString()} {transaction.currency}
+                        {transaction.amount.toLocaleString()}{getCurrencySymbol(transaction.currency)}
                       </p>
                     </div>
                   </button>
@@ -190,7 +191,7 @@ export default function HomePage() {
                           }`}
                       >
                         {transaction.type === 'INCOME' ? '+' : '-'}
-                        {transaction.amount.toLocaleString()} {transaction.currency}
+                        {transaction.amount.toLocaleString()}{getCurrencySymbol(transaction.currency)}
                       </p>
                     </div>
                   </button>

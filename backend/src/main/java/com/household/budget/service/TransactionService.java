@@ -2,6 +2,7 @@ package com.household.budget.service;
 
 import com.household.budget.dto.TransactionRequest;
 import com.household.budget.dto.TransactionResponse;
+import com.household.budget.entity.Currency;
 import com.household.budget.entity.Transaction;
 import com.household.budget.entity.User;
 import com.household.budget.repository.TransactionRepository;
@@ -28,13 +29,16 @@ public class TransactionService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
 
+        // 통화 코드를 Currency enum으로 변환
+        Currency currency = Currency.fromString(request.getCurrency());
+
         Transaction transaction = Transaction.builder()
                 .user(user)
                 .type(request.getType())
                 .amount(request.getAmount())
                 .description(request.getDescription())
                 .paymentMethod(request.getPaymentMethod())
-                .currency(request.getCurrency())
+                .currency(currency)
                 .originalAmount(request.getOriginalAmount())
                 .discountRate(request.getDiscountRate())
                 .exchangeRate(request.getExchangeRate())
@@ -82,11 +86,14 @@ public class TransactionService {
             throw new RuntimeException("접근 권한이 없습니다");
         }
 
+        // 통화 코드를 Currency enum으로 변환
+        Currency currency = Currency.fromString(request.getCurrency());
+
         transaction.setType(request.getType());
         transaction.setAmount(request.getAmount());
         transaction.setDescription(request.getDescription());
         transaction.setPaymentMethod(request.getPaymentMethod());
-        transaction.setCurrency(request.getCurrency());
+        transaction.setCurrency(currency);
         transaction.setOriginalAmount(request.getOriginalAmount());
         transaction.setDiscountRate(request.getDiscountRate());
         transaction.setExchangeRate(request.getExchangeRate());
@@ -130,7 +137,7 @@ public class TransactionService {
                 .amount(transaction.getAmount())
                 .description(transaction.getDescription())
                 .paymentMethod(transaction.getPaymentMethod())
-                .currency(transaction.getCurrency())
+                .currency(transaction.getCurrency().name()) // Currency enum을 문자열로 변환
                 .originalAmount(transaction.getOriginalAmount())
                 .discountRate(transaction.getDiscountRate())
                 .exchangeRate(transaction.getExchangeRate())

@@ -45,8 +45,9 @@ public class Transaction {
     @Column(nullable = false)
     private String paymentMethod; // 결제수단
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 3)
-    private String currency; // 통화 (KRW, USD 등)
+    private Currency currency; // 통화 (KRW, USD 등)
 
     @Column(precision = 15, scale = 2)
     private BigDecimal originalAmount; // 원금 (옵션)

@@ -6,6 +6,7 @@ import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { transactionAPI } from '@/lib/api';
 import { getCurrentKSTDate } from '@/lib/dateUtils';
+import { normalizeCurrency } from '@/lib/currencyUtils';
 
 interface TransactionInputProps {
   type: 'INCOME' | 'EXPENSE';
@@ -15,6 +16,7 @@ interface TransactionInputProps {
 interface ParsedTransaction {
   description: string;
   amount: number;
+  currency?: string;
 }
 
 export function TransactionInput({ type, onSuccess }: TransactionInputProps) {
@@ -29,34 +31,36 @@ export function TransactionInput({ type, onSuccess }: TransactionInputProps) {
 
   // Auto 모드: 정규식으로 "마트 20000원" 형식 파싱
   const parseAutoInput = (input: string): ParsedTransaction | null => {
-    // 패턴 1: "설명 금액원" (예: "마트 20000원")
-    const pattern1 = /^(.+?)\s+([\d,]+)원?\s*$/;
-    // 패턴 2: "금액원 설명" (예: "20000원 마트")
-    const pattern2 = /^([\d,]+)원?\s+(.+)$/;
-    // 패턴 3: "설명 금액" (원 없이, 예: "마트 20000")
-    const pattern3 = /^(.+?)\s+([\d,]+)\s*$/;
+    // 패턴 1: "설명 금액통화" (예: "마트 20000원", "점심 15달러", "커피 5000₩")
+    const pattern1 = /^(.+?)\s+([\d,]+)\s*([가-힣$€¥£₩]+)?\s*$/;
+    // 패턴 2: "금액통화 설명" (예: "20000원 마트", "$15 점심")
+    const pattern2 = /^([\d,]+)\s*([가-힣$€¥£₩]+)?\s+(.+)$/;
 
     let match = input.match(pattern1);
     if (match) {
+      const description = match[1].trim();
+      const amount = parseFloat(match[2].replace(/,/g, ''));
+      const currencyInput = match[3] || '원'; // 기본값 '원'
+      const currency = normalizeCurrency(currencyInput);
+
       return {
-        description: match[1].trim(),
-        amount: parseFloat(match[2].replace(/,/g, ''))
+        description,
+        amount,
+        currency
       };
     }
 
     match = input.match(pattern2);
     if (match) {
-      return {
-        description: match[2].trim(),
-        amount: parseFloat(match[1].replace(/,/g, ''))
-      };
-    }
+      const amount = parseFloat(match[1].replace(/,/g, ''));
+      const currencyInput = match[2] || '원'; // 기본값 '원'
+      const currency = normalizeCurrency(currencyInput);
+      const description = match[3].trim();
 
-    match = input.match(pattern3);
-    if (match && !isNaN(parseFloat(match[2].replace(/,/g, '')))) {
       return {
-        description: match[1].trim(),
-        amount: parseFloat(match[2].replace(/,/g, ''))
+        description,
+        amount,
+        currency
       };
     }
 
@@ -98,12 +102,14 @@ export function TransactionInput({ type, onSuccess }: TransactionInputProps) {
     try {
       let description = '';
       let amount = 0;
+      let currency = 'KRW'; // 기본값을 KRW로 변경
 
       if (autoMode) {
         const parsed = parseAutoInput(content);
         if (parsed) {
           description = parsed.description;
           amount = parsed.amount;
+          currency = parsed.currency || 'KRW';
         } else {
           // Auto 모드인데 파싱 실패 시 에러 표시
           alert('입력 형식이 올바르지 않습니다. 예: "마트 20000원"');
@@ -126,7 +132,7 @@ export function TransactionInput({ type, onSuccess }: TransactionInputProps) {
         amount,
         description,
         paymentMethod: '기타', // 기본값
-        currency: '원',
+        currency, // 파싱된 통화 코드 사용
         tags: tags.length > 0 ? JSON.stringify(tags) : undefined,
         transactionDate: getCurrentKSTDate()
       });
