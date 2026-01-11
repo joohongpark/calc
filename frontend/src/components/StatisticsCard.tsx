@@ -16,7 +16,7 @@ import {
 } from 'recharts';
 
 export default function StatisticsCard() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate] = useState(new Date());
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -152,7 +152,7 @@ export default function StatisticsCard() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
@@ -161,7 +161,7 @@ export default function StatisticsCard() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => value.toLocaleString() + ' 원'} />
+                  <Tooltip formatter={(value: number | undefined) => (value ?? 0).toLocaleString() + ' 원'} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -182,7 +182,7 @@ export default function StatisticsCard() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
-                  <Tooltip formatter={(value: number) => value.toLocaleString() + ' 원'} />
+                  <Tooltip formatter={(value: number | undefined) => (value ?? 0).toLocaleString() + ' 원'} />
                   <Legend />
                   <Bar dataKey="수입" fill="#10b981" />
                   <Bar dataKey="지출" fill="#ef4444" />

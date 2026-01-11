@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TransactionResponse, transactionAPI } from '@/lib/api';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, CalendarDayButton } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { DateTime } from 'luxon';
