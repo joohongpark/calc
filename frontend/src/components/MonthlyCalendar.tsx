@@ -12,11 +12,12 @@ import { getCurrencySymbol } from '@/lib/currencyUtils';
 interface MonthlyCalendarProps {
   onDateClick?: (date: DateTime, transactions: TransactionResponse[]) => void;
   onAddTransaction?: (date: DateTime) => void;
+  refreshTrigger?: number; // 거래 변동 시 리프레시 트리거
 }
 
 const KOREA_TIMEZONE = 'Asia/Seoul';
 
-export default function MonthlyCalendar({ onDateClick, onAddTransaction }: MonthlyCalendarProps) {
+export default function MonthlyCalendar({ onDateClick, onAddTransaction, refreshTrigger }: MonthlyCalendarProps) {
   const [currentDate, setCurrentDate] = useState(DateTime.now().setZone(KOREA_TIMEZONE));
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
@@ -24,7 +25,7 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction }: Month
 
   useEffect(() => {
     loadMonthlyTransactions();
-  }, [currentDate]);
+  }, [currentDate, refreshTrigger]); // refreshTrigger 추가
 
   const loadMonthlyTransactions = async () => {
     setLoading(true);

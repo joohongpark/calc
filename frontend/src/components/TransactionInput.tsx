@@ -6,18 +6,12 @@ import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { transactionAPI } from '@/lib/api';
 import { getCurrentKSTDate } from '@/lib/dateUtils';
-import { normalizeCurrency } from '@/lib/currencyUtils';
+import { parseAutoInput } from '@/lib/parseUtils';
 
 interface TransactionInputProps {
   type: 'INCOME' | 'EXPENSE';
   onSuccess?: () => void;
   onModeChange?: (isAutoMode: boolean) => void;
-}
-
-interface ParsedTransaction {
-  description: string;
-  amount: number;
-  currency?: string;
 }
 
 export function TransactionInput({ type, onSuccess, onModeChange }: TransactionInputProps) {
@@ -35,44 +29,6 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Auto 모드: 정규식으로 "마트 20000원" 형식 파싱
-  const parseAutoInput = (input: string): ParsedTransaction | null => {
-    // 패턴 1: "설명 금액통화" (예: "마트 20000원", "점심 15달러", "커피 5000₩")
-    const pattern1 = /^(.+?)\s+([\d,]+)\s*([가-힣$€¥£₩]+)?\s*$/;
-    // 패턴 2: "금액통화 설명" (예: "20000원 마트", "$15 점심")
-    const pattern2 = /^([\d,]+)\s*([가-힣$€¥£₩]+)?\s+(.+)$/;
-
-    let match = input.match(pattern1);
-    if (match) {
-      const description = match[1].trim();
-      const amount = parseFloat(match[2].replace(/,/g, ''));
-      const currencyInput = match[3] || '원'; // 기본값 '원'
-      const currency = normalizeCurrency(currencyInput);
-
-      return {
-        description,
-        amount,
-        currency
-      };
-    }
-
-    match = input.match(pattern2);
-    if (match) {
-      const amount = parseFloat(match[1].replace(/,/g, ''));
-      const currencyInput = match[2] || '원'; // 기본값 '원'
-      const currency = normalizeCurrency(currencyInput);
-      const description = match[3].trim();
-
-      return {
-        description,
-        amount,
-        currency
-      };
-    }
-
-    return null;
-  };
 
   const handleAddTag = () => {
     if (currentTag.trim() && !tags.includes(currentTag.trim())) {
@@ -110,6 +66,7 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
       let description = '';
       let amount = 0;
       let currency = 'KRW'; // 기본값을 KRW로 변경
+      let transactionDate = getCurrentKSTDate(); // 기본값은 오늘
 
       if (autoMode) {
         const parsed = parseAutoInput(content);
@@ -117,9 +74,13 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
           description = parsed.description;
           amount = parsed.amount;
           currency = parsed.currency || 'KRW';
+          // 날짜가 파싱되었으면 사용, 아니면 오늘 날짜
+          if (parsed.date) {
+            transactionDate = parsed.date;
+          }
         } else {
           // Auto 모드인데 파싱 실패 시 에러 표시
-          alert('입력 형식이 올바르지 않습니다. 예: "마트 20000원"');
+          alert('입력 형식이 올바르지 않습니다. 예: "어제 마트 20000원" 또는 "마트 20000원"');
           setIsSubmitting(false);
           return;
         }
@@ -152,7 +113,7 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
         paymentMethod: autoMode ? '기타' : manualPaymentMethod,
         currency, // 파싱된 통화 코드 사용
         tags: tags.length > 0 ? JSON.stringify(tags) : undefined,
-        transactionDate: getCurrentKSTDate()
+        transactionDate: transactionDate
       });
 
       // 성공 후 초기화
@@ -212,7 +173,7 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
       {/* 메인 입력 영역 */}
       <Textarea
         ref={textareaRef}
-        placeholder={autoMode ? '예: 마트 20000원' : '설명을 입력하세요'}
+        placeholder={autoMode ? '예: 어제 오후 3시 마트 20000원 / 12.25 점심 15000엔 / 커피 5000원' : '설명을 입력하세요'}
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}

@@ -25,6 +25,7 @@ export default function HomePage() {
   const [selectedDate, setSelectedDate] = useState<DateTime | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionResponse | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // 캘린더 리프레시 트리거
 
   useEffect(() => {
     loadTransactions();
@@ -48,6 +49,7 @@ export default function HomePage() {
 
   const handleTransactionSuccess = () => {
     loadTransactions();
+    setRefreshTrigger(prev => prev + 1); // 캘린더 리프레시
   };
 
   const handleDateClick = (date: DateTime, dayTransactions: TransactionResponse[]) => {
@@ -64,6 +66,7 @@ export default function HomePage() {
 
   const handleDetailSuccess = () => {
     loadTransactions();
+    setRefreshTrigger(prev => prev + 1); // 캘린더 리프레시
     setSelectedDate(null);
     setSelectedDateTransactions([]);
   };
@@ -113,7 +116,10 @@ export default function HomePage() {
         </Card>
 
         {/* Monthly Calendar */}
-        <MonthlyCalendar onDateClick={handleDateClick} />
+        <MonthlyCalendar
+          onDateClick={handleDateClick}
+          refreshTrigger={refreshTrigger}
+        />
 
         {/* Selected Date Transactions */}
         {selectedDate && selectedDateTransactions.length > 0 && (
