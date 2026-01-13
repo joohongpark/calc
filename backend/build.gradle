@@ -39,11 +39,14 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
 
-	// H2 Database (개발/프로토타입용)
-	runtimeOnly 'com.h2database:h2'
+	// H2 Database (개발/프로토타입용 - 현재 비활성화)
+	// runtimeOnly 'com.h2database:h2'
 
-	// PostgreSQL Driver (운영용 - 필요시 활성화)
-	// runtimeOnly 'org.postgresql:postgresql'
+	// PostgreSQL Driver
+	runtimeOnly 'org.postgresql:postgresql'
+
+	// Flyway (Database Migration)
+	implementation 'org.flywaydb:flyway-core'
 
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'

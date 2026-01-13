@@ -86,6 +86,28 @@ export default function StatisticsCard() {
       지출: data.expense,
     }));
 
+  // 태그별 지출 계산
+  const expenseByTag: Record<string, number> = {};
+  transactions
+    .filter((t) => t.type === 'EXPENSE' && t.tags)
+    .forEach((t) => {
+      try {
+        const tags = JSON.parse(t.tags!);
+        tags.forEach((tag: string) => {
+          expenseByTag[tag] = (expenseByTag[tag] || 0) + t.amount;
+        });
+      } catch (e) {
+        // JSON 파싱 실패 시 무시
+      }
+    });
+
+  const tagData = Object.entries(expenseByTag)
+    .sort((a, b) => b[1] - a[1]) // 금액 높은 순으로 정렬
+    .map(([name, value]) => ({
+      name,
+      value,
+    }));
+
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
   if (loading) {
@@ -158,6 +180,40 @@ export default function StatisticsCard() {
                     dataKey="value"
                   >
                     {pieData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number | undefined) => (value ?? 0).toLocaleString() + ' 원'} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 태그별 지출 (Pie Chart) */}
+        {tagData.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>태그별 지출</CardTitle>
+              <CardDescription>
+                {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={tagData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {tagData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
