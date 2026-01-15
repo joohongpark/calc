@@ -26,6 +26,8 @@ export default function HomePage() {
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionResponse | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0); // 캘린더 리프레시 트리거
+  const [addTransactionDialogOpen, setAddTransactionDialogOpen] = useState(false);
+  const [addTransactionDate, setAddTransactionDate] = useState<DateTime | null>(null);
 
   useEffect(() => {
     loadTransactions();
@@ -69,6 +71,17 @@ export default function HomePage() {
     setRefreshTrigger(prev => prev + 1); // 캘린더 리프레시
     setSelectedDate(null);
     setSelectedDateTransactions([]);
+  };
+
+  const handleAddTransactionClick = (date: DateTime) => {
+    setAddTransactionDate(date);
+    setAddTransactionDialogOpen(true);
+  };
+
+  const handleAddTransactionSuccess = () => {
+    loadTransactions();
+    setRefreshTrigger(prev => prev + 1);
+    setAddTransactionDialogOpen(false);
   };
 
   return (
@@ -118,6 +131,7 @@ export default function HomePage() {
         {/* Monthly Calendar */}
         <MonthlyCalendar
           onDateClick={handleDateClick}
+          onAddTransaction={handleAddTransactionClick}
           refreshTrigger={refreshTrigger}
         />
 
@@ -227,6 +241,15 @@ export default function HomePage() {
           onSuccess={handleDetailSuccess}
         />
       )}
+
+      {/* Add Transaction Dialog (from Calendar) */}
+      <TransactionDialog
+        open={addTransactionDialogOpen}
+        onOpenChange={setAddTransactionDialogOpen}
+        type={isIncomeMode ? "INCOME" : "EXPENSE"}
+        onSuccess={handleAddTransactionSuccess}
+        initialDate={addTransactionDate?.toFormat('yyyy-MM-dd')}
+      />
     </div>
   );
 }

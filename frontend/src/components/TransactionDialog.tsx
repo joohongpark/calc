@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,12 +17,14 @@ TransactionDialog 컴포넌트 프로퍼티
 - onOpenChange: function - 다이얼로그 열림 상태 변경 시 콜백
 - type: 'INCOME' | 'EXPENSE' - 거래 유형
 - onSuccess: function (optional) - 거래 추가 성공 시 콜백
+- initialDate: string (optional) - 초기 날짜 (YYYY-MM-DD 형식)
 */
 interface TransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   type: 'INCOME' | 'EXPENSE';
   onSuccess?: () => void;
+  initialDate?: string;
 }
 
 type Step = 'amount' | 'description' | 'paymentMethod' | 'options';
@@ -32,16 +34,24 @@ export default function TransactionDialog({
   onOpenChange,
   type,
   onSuccess,
+  initialDate,
 }: TransactionDialogProps) {
   const [step, setStep] = useState<Step>('amount');
   const [formData, setFormData] = useState<Partial<TransactionRequest>>({
     type,
-    currency: '원',
-    transactionDate: getCurrentKSTDate(), // 한국 시간 기준 현재 날짜
+    currency: 'KRW',
+    transactionDate: initialDate || getCurrentKSTDate(), // 전달된 날짜 또는 현재 날짜
   });
   const [tagsInput, setTagsInput] = useState(''); // 태그 입력용 별도 state
 
   const [loading, setLoading] = useState(false);
+
+  // initialDate가 변경될 때 formData 업데이트
+  useEffect(() => {
+    if (initialDate && open) {
+      setFormData(prev => ({ ...prev, transactionDate: initialDate }));
+    }
+  }, [initialDate, open]);
 
   const handleNext = (field: keyof TransactionRequest, value: any) => {
     setFormData({ ...formData, [field]: value });
