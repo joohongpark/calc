@@ -144,10 +144,10 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
   };
 
   return (
-    <div className="border rounded-lg p-4 space-y-3">
+    <div className="border rounded-lg p-2 sm:p-4 space-y-2 sm:space-y-3">
       {/* 태그 입력 영역 */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm text-muted-foreground">@</span>
+      <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+        <span className="text-xs sm:text-sm text-muted-foreground">@</span>
         <input
           type="text"
           placeholder="태그 추가"
@@ -155,10 +155,10 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
           onChange={(e) => setCurrentTag(e.target.value)}
           onKeyDown={handleTagKeyDown}
           onBlur={handleAddTag}
-          className="text-sm px-2 py-1 border-0 focus:outline-none focus:ring-0 bg-transparent flex-1 min-w-[100px]"
+          className="text-xs sm:text-sm px-1 sm:px-2 py-1 border-0 focus:outline-none focus:ring-0 bg-transparent flex-1 min-w-[80px] sm:min-w-[100px]"
         />
         {tags.map((tag) => (
-          <Badge key={tag} variant="secondary" className="gap-1">
+          <Badge key={tag} variant="secondary" className="gap-1 text-xs">
             {tag}
             <button
               onClick={() => handleRemoveTag(tag)}
@@ -177,12 +177,12 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="min-h-[80px] resize-none border-0 focus-visible:ring-0 p-0"
+        className="min-h-[60px] sm:min-h-[80px] resize-none border-0 focus-visible:ring-0 p-0 text-sm sm:text-base"
       />
 
       {/* Manual 모드 전용 입력 필드 */}
       {!autoMode && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
           <div className="col-span-2">
             <input
               type="text"
@@ -193,14 +193,14 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
                 const value = e.target.value.replace(/[^\d,]/g, '');
                 setManualAmount(value);
               }}
-              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <div>
             <select
               value={manualCurrency}
               onChange={(e) => setManualCurrency(e.target.value)}
-              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-1 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="KRW">원(₩)</option>
               <option value="USD">달러($)</option>
@@ -212,7 +212,7 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
             <select
               value={manualPaymentMethod}
               onChange={(e) => setManualPaymentMethod(e.target.value)}
-              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="기타">기타</option>
               <option value="현금">현금</option>
@@ -244,14 +244,14 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
 
       {/* 하단 컨트롤 영역 */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* 파일 첨부 버튼 */}
           <button
             onClick={() => fileInputRef.current?.click()}
             className="text-muted-foreground hover:text-foreground transition-colors"
             title="파일 첨부"
           >
-            <Paperclip className="h-5 w-5" />
+            <Paperclip className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
           <input
             ref={fileInputRef}
@@ -263,7 +263,7 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
           />
 
           {/* Auto 모드 토글 */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Switch
               checked={autoMode}
               onCheckedChange={(checked) => {
@@ -272,7 +272,7 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
               }}
               id="auto-mode"
             />
-            <label htmlFor="auto-mode" className="text-sm cursor-pointer">
+            <label htmlFor="auto-mode" className="text-xs sm:text-sm cursor-pointer whitespace-nowrap">
               빠른 입력 모드
             </label>
           </div>
@@ -283,9 +283,9 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
           size="icon"
           onClick={handleSubmit}
           disabled={!content.trim() || isSubmitting}
-          className="rounded-full h-10 w-10"
+          className="rounded-full h-8 w-8 sm:h-10 sm:w-10"
         >
-          <ArrowUp className="h-5 w-5" />
+          <ArrowUp className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
       </div>
     </div>
