@@ -121,30 +121,30 @@ export default function StatisticsCard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
         <Card>
-          <CardHeader>
-            <CardDescription>총 수입</CardDescription>
-            <CardTitle className="text-2xl text-green-600">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardDescription className="text-xs sm:text-sm">총 수입</CardDescription>
+            <CardTitle className="text-lg sm:text-xl md:text-2xl text-green-600">
               +{totalIncome.toLocaleString()} 원
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader>
-            <CardDescription>총 지출</CardDescription>
-            <CardTitle className="text-2xl text-red-600">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardDescription className="text-xs sm:text-sm">총 지출</CardDescription>
+            <CardTitle className="text-lg sm:text-xl md:text-2xl text-red-600">
               -{totalExpense.toLocaleString()} 원
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader>
-            <CardDescription>잔액</CardDescription>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardDescription className="text-xs sm:text-sm">잔액</CardDescription>
             <CardTitle
-              className={`text-2xl ${
+              className={`text-lg sm:text-xl md:text-2xl ${
                 balance >= 0 ? 'text-green-600' : 'text-red-600'
               }`}
             >
@@ -156,18 +156,18 @@ export default function StatisticsCard() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* 결제수단별 지출 (Pie Chart) */}
         {pieData.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle>결제수단별 지출</CardTitle>
-              <CardDescription>
+            <CardHeader className="pb-2 sm:pb-6">
+              <CardTitle className="text-base sm:text-lg">결제수단별 지출</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250} className="sm:!h-[300px]">
                 <PieChart>
                   <Pie
                     data={pieData}
@@ -175,7 +175,7 @@ export default function StatisticsCard() {
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                    outerRadius={80}
+                    outerRadius={window.innerWidth < 640 ? 60 : 80}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -184,7 +184,7 @@ export default function StatisticsCard() {
                     ))}
                   </Pie>
                   <Tooltip formatter={(value: number | undefined) => (value ?? 0).toLocaleString() + ' 원'} />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: window.innerWidth < 640 ? '12px' : '14px' }} />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
@@ -194,14 +194,14 @@ export default function StatisticsCard() {
         {/* 태그별 지출 (Pie Chart) */}
         {tagData.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle>태그별 지출</CardTitle>
-              <CardDescription>
+            <CardHeader className="pb-2 sm:pb-6">
+              <CardTitle className="text-base sm:text-lg">태그별 지출</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250} className="sm:!h-[300px]">
                 <PieChart>
                   <Pie
                     data={tagData}
@@ -209,7 +209,7 @@ export default function StatisticsCard() {
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                    outerRadius={80}
+                    outerRadius={window.innerWidth < 640 ? 60 : 80}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -218,7 +218,7 @@ export default function StatisticsCard() {
                     ))}
                   </Pie>
                   <Tooltip formatter={(value: number | undefined) => (value ?? 0).toLocaleString() + ' 원'} />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: window.innerWidth < 640 ? '12px' : '14px' }} />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
@@ -228,18 +228,23 @@ export default function StatisticsCard() {
         {/* 일별 수입/지출 (Bar Chart) */}
         {barData.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle>일별 수입/지출</CardTitle>
-              <CardDescription>최근 7일</CardDescription>
+            <CardHeader className="pb-2 sm:pb-6">
+              <CardTitle className="text-base sm:text-lg">일별 수입/지출</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">최근 7일</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250} className="sm:!h-[300px]">
                 <BarChart data={barData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
+                  <XAxis
+                    dataKey="date"
+                    style={{ fontSize: window.innerWidth < 640 ? '10px' : '12px' }}
+                  />
+                  <YAxis
+                    style={{ fontSize: window.innerWidth < 640 ? '10px' : '12px' }}
+                  />
                   <Tooltip formatter={(value: number | undefined) => (value ?? 0).toLocaleString() + ' 원'} />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: window.innerWidth < 640 ? '12px' : '14px' }} />
                   <Bar dataKey="수입" fill="#10b981" />
                   <Bar dataKey="지출" fill="#ef4444" />
                 </BarChart>
@@ -251,33 +256,33 @@ export default function StatisticsCard() {
 
       {/* 거래 통계 */}
       <Card>
-        <CardHeader>
-          <CardTitle>거래 통계</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-2 sm:pb-6">
+          <CardTitle className="text-base sm:text-lg">거래 통계</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">총 거래 건수</p>
-              <p className="text-2xl font-bold">{transactions.length}건</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <div className="space-y-0.5 sm:space-y-1">
+              <p className="text-xs sm:text-sm text-muted-foreground">총 거래 건수</p>
+              <p className="text-lg sm:text-xl md:text-2xl font-bold">{transactions.length}건</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">수입 건수</p>
-              <p className="text-2xl font-bold text-green-600">
+            <div className="space-y-0.5 sm:space-y-1">
+              <p className="text-xs sm:text-sm text-muted-foreground">수입 건수</p>
+              <p className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">
                 {transactions.filter((t) => t.type === 'INCOME').length}건
               </p>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">지출 건수</p>
-              <p className="text-2xl font-bold text-red-600">
+            <div className="space-y-0.5 sm:space-y-1">
+              <p className="text-xs sm:text-sm text-muted-foreground">지출 건수</p>
+              <p className="text-lg sm:text-xl md:text-2xl font-bold text-red-600">
                 {transactions.filter((t) => t.type === 'EXPENSE').length}건
               </p>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">평균 지출</p>
-              <p className="text-2xl font-bold">
+            <div className="space-y-0.5 sm:space-y-1">
+              <p className="text-xs sm:text-sm text-muted-foreground">평균 지출</p>
+              <p className="text-lg sm:text-xl md:text-2xl font-bold">
                 {transactions.filter((t) => t.type === 'EXPENSE').length > 0
                   ? (
                       totalExpense / transactions.filter((t) => t.type === 'EXPENSE').length

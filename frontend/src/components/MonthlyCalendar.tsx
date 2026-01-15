@@ -86,14 +86,14 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction, refresh
   const selectedDateTransactions = selectedDate ? getTransactionsForDate(selectedDate) : [];
 
   return (
-    <Card className="w-full py-4">
-      <CardHeader className="px-4">
-        <CardTitle>
+    <Card className="w-full py-2 sm:py-4">
+      <CardHeader className="px-3 sm:px-4 pb-2 sm:pb-3">
+        <CardTitle className="text-base sm:text-lg">
           {currentDate.year}년 {currentDate.month}월
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-4">
-        <div className="flex flex-col lg:flex-row gap-6">
+      <CardContent className="px-3 sm:px-4">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
           {/* 캘린더 영역 */}
           <div className="flex-1">
             {loading ? (
@@ -138,15 +138,15 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction, refresh
                         {...props}
                         onClick={() => handleDayClick(day.date)}
                         className={cn(
-                          "h-auto min-h-[80px] w-full p-1",
+                          "h-auto min-h-[60px] sm:min-h-[70px] md:min-h-[80px] w-full p-0.5 sm:p-1",
                           hasTransactions ? 'cursor-pointer hover:bg-muted' : 'cursor-default',
                           isSelected && '!bg-primary/10 !text-primary'
                         )}
                       >
-                        <div className="flex flex-col items-center gap-1 w-full h-full">
-                          <span className="text-sm font-medium">{day.date.getDate()}</span>
+                        <div className="flex flex-col items-center gap-0.5 sm:gap-1 w-full h-full">
+                          <span className="text-xs sm:text-sm font-medium">{day.date.getDate()}</span>
                           {hasTransactions && (
-                            <div className="flex flex-col gap-0.5 text-[10px] w-full">
+                            <div className="flex flex-col gap-0.5 text-[9px] sm:text-[10px] w-full px-0.5">
                               {income > 0 && (
                                 <div className="text-green-600 font-semibold truncate text-center">
                                   +{income.toLocaleString()}
@@ -169,9 +169,9 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction, refresh
           </div>
 
           {/* 거래 내역 영역 - 큰 화면에서는 오른쪽에, 작은 화면에서는 아래에 */}
-          <div className="lg:w-80 lg:border-l lg:pl-6 border-t lg:border-t-0 pt-4 lg:pt-0">
-            <div className="flex w-full items-center justify-between px-1 mb-3">
-              <div className="text-sm font-medium">
+          <div className="lg:w-80 lg:border-l lg:pl-4 xl:pl-6 border-t lg:border-t-0 pt-3 sm:pt-4 lg:pt-0">
+            <div className="flex w-full items-center justify-between px-1 mb-2 sm:mb-3">
+              <div className="text-xs sm:text-sm font-medium">
                 {selectedDate
                   ? DateTime.fromJSDate(selectedDate).setZone(KOREA_TIMEZONE).toFormat('yyyy년 M월 d일')
                   : '날짜를 선택하세요'}
@@ -179,35 +179,35 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction, refresh
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-6"
+                className="size-5 sm:size-6"
                 title="거래 추가"
                 onClick={handleAddTransaction}
               >
-                <PlusIcon className="size-4" />
+                <PlusIcon className="size-3 sm:size-4" />
                 <span className="sr-only">거래 추가</span>
               </Button>
             </div>
-            <div className="flex w-full flex-col gap-2 max-h-[500px] overflow-y-auto">
+            <div className="flex w-full flex-col gap-1.5 sm:gap-2 max-h-[300px] sm:max-h-[400px] lg:max-h-[500px] overflow-y-auto">
               {selectedDateTransactions.length === 0 ? (
-                <div className="text-sm text-muted-foreground px-2">거래 내역이 없습니다.</div>
+                <div className="text-xs sm:text-sm text-muted-foreground px-2">거래 내역이 없습니다.</div>
               ) : (
                 selectedDateTransactions.map((transaction) => (
                   <div
                     key={transaction.id}
-                    className={`relative rounded-md p-2 pl-6 text-sm cursor-pointer hover:bg-muted/50 transition-colors ${
+                    className={`relative rounded-md p-1.5 sm:p-2 pl-4 sm:pl-6 text-xs sm:text-sm cursor-pointer hover:bg-muted/50 transition-colors ${
                       transaction.type === 'INCOME'
                         ? 'bg-green-50 after:bg-green-600'
                         : 'bg-red-50 after:bg-red-600'
-                    } after:absolute after:inset-y-2 after:left-2 after:w-1 after:rounded-full`}
+                    } after:absolute after:inset-y-1.5 sm:after:inset-y-2 after:left-1.5 sm:after:left-2 after:w-0.5 sm:after:w-1 after:rounded-full`}
                     onClick={() => {
                       const luxonDate = DateTime.fromJSDate(selectedDate!).setZone(KOREA_TIMEZONE);
                       onDateClick?.(luxonDate, [transaction]);
                     }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium">{transaction.description}</div>
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="font-medium truncate flex-1 min-w-0">{transaction.description}</div>
                       <div
-                        className={`font-semibold ${
+                        className={`font-semibold whitespace-nowrap flex-shrink-0 ${
                           transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
                         }`}
                       >
@@ -215,7 +215,7 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction, refresh
                         {transaction.amount.toLocaleString()}{getCurrencySymbol(transaction.currency)}
                       </div>
                     </div>
-                    <div className="text-muted-foreground text-xs mt-1">
+                    <div className="text-muted-foreground text-[10px] sm:text-xs mt-0.5 sm:mt-1 truncate">
                       {transaction.paymentMethod}
                       {transaction.tags && ` • ${JSON.parse(transaction.tags).join(', ')}`}
                     </div>

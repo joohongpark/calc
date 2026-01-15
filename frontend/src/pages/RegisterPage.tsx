@@ -44,16 +44,16 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>회원가입</CardTitle>
-          <CardDescription>새 계정을 만드세요</CardDescription>
+    <div className="h-screen overflow-hidden flex items-center justify-center bg-background p-3 sm:p-4">
+      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-lg sm:text-2xl">회원가입</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">새 계정을 만드세요</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">사용자 이름</Label>
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="username" className="text-sm">사용자 이름</Label>
               <Input
                 id="username"
                 value={username}
@@ -62,22 +62,24 @@ export default function RegisterPage() {
                 minLength={3}
                 maxLength={50}
                 autoFocus
+                className="text-sm sm:text-base"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">이메일</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="email" className="text-sm">이메일</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="text-sm sm:text-base"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">비밀번호</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="password" className="text-sm">비밀번호</Label>
               <Input
                 id="password"
                 type="password"
@@ -85,29 +87,31 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                className="text-sm sm:text-base"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="passwordConfirm">비밀번호 확인</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="passwordConfirm" className="text-sm">비밀번호 확인</Label>
               <Input
                 id="passwordConfirm"
                 type="password"
                 value={passwordConfirm}
                 onChange={(e) => setPasswordConfirm(e.target.value)}
                 required
+                className="text-sm sm:text-base"
               />
             </div>
 
             {error && (
-              <div className="text-sm text-red-600">{error}</div>
+              <div className="text-xs sm:text-sm text-red-600">{error}</div>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full text-sm sm:text-base" disabled={loading}>
               {loading ? '가입 중...' : '회원가입'}
             </Button>
 
-            <div className="text-center text-sm">
+            <div className="text-center text-xs sm:text-sm">
               이미 계정이 있으신가요?{' '}
               <button
                 type="button"

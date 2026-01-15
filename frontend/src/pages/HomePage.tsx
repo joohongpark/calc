@@ -72,19 +72,19 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background p-3 sm:p-4">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">가계부</h1>
-            <p className="text-muted-foreground">{user?.username}님, 환영합니다!</p>
+        <div className="flex justify-between items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">가계부</h1>
+            <p className="text-sm sm:text-base text-muted-foreground truncate">{user?.username}님, 환영합니다!</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/statistics')}>
+          <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => navigate('/statistics')} className="text-xs sm:text-sm">
               통계
             </Button>
-            <Button variant="outline" onClick={handleLogout}>
+            <Button variant="outline" size="sm" onClick={handleLogout} className="text-xs sm:text-sm">
               로그아웃
             </Button>
           </div>
@@ -124,31 +124,31 @@ export default function HomePage() {
         {/* Selected Date Transactions */}
         {selectedDate && selectedDateTransactions.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base sm:text-lg">
                 {selectedDate.toFormat('yyyy년 M월 d일')} 거래 내역
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 총 {selectedDateTransactions.length}건의 거래
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {selectedDateTransactions.map((transaction) => (
                   <button
                     key={transaction.id}
                     onClick={() => handleTransactionClick(transaction)}
-                    className="w-full flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors text-left"
+                    className="w-full flex items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors text-left"
                   >
-                    <div className="flex-1">
-                      <p className="font-medium">{transaction.description}</p>
-                      <p className="text-sm text-muted-foreground">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <p className="font-medium text-sm sm:text-base truncate">{transaction.description}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
                         {transaction.paymentMethod}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <p
-                        className={`text-lg font-semibold ${transaction.type === 'INCOME'
+                        className={`text-base sm:text-lg font-semibold ${transaction.type === 'INCOME'
                           ? 'text-green-600'
                           : 'text-red-600'
                           }`}
@@ -166,34 +166,34 @@ export default function HomePage() {
 
         {/* Recent Transactions */}
         <Card>
-          <CardHeader>
-            <CardTitle>최근 내역</CardTitle>
-            <CardDescription>최근 거래 내역</CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base sm:text-lg">최근 내역</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">최근 거래 내역</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-muted-foreground text-center py-8">로딩 중...</p>
+              <p className="text-muted-foreground text-center py-8 text-sm">로딩 중...</p>
             ) : transactions.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
+              <p className="text-muted-foreground text-center py-8 text-sm">
                 아직 거래 내역이 없습니다
               </p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {transactions.map((transaction) => (
                   <button
                     key={transaction.id}
                     onClick={() => handleTransactionClick(transaction)}
-                    className="w-full flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors text-left"
+                    className="w-full flex items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors text-left"
                   >
-                    <div className="flex-1">
-                      <p className="font-medium">{transaction.description}</p>
-                      <p className="text-sm text-muted-foreground">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <p className="font-medium text-sm sm:text-base truncate">{transaction.description}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
                         {transaction.paymentMethod} · {new Date(transaction.transactionDate).toLocaleDateString('ko-KR')}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <p
-                        className={`text-lg font-semibold ${transaction.type === 'INCOME'
+                        className={`text-base sm:text-lg font-semibold ${transaction.type === 'INCOME'
                           ? 'text-green-600'
                           : 'text-red-600'
                           }`}

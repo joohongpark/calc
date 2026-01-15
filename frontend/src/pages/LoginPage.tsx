@@ -30,45 +30,47 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="h-screen overflow-hidden flex items-center justify-center bg-background p-3 sm:p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>로그인</CardTitle>
-          <CardDescription>가계부에 로그인하세요</CardDescription>
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-lg sm:text-2xl">로그인</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">가계부에 로그인하세요</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">사용자 이름</Label>
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="username" className="text-sm">사용자 이름</Label>
               <Input
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoFocus
+                className="text-sm sm:text-base"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">비밀번호</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="password" className="text-sm">비밀번호</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="text-sm sm:text-base"
               />
             </div>
 
             {error && (
-              <div className="text-sm text-red-600">{error}</div>
+              <div className="text-xs sm:text-sm text-red-600">{error}</div>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full text-sm sm:text-base" disabled={loading}>
               {loading ? '로그인 중...' : '로그인'}
             </Button>
 
-            <div className="text-center text-sm">
+            <div className="text-center text-xs sm:text-sm">
               계정이 없으신가요?{' '}
               <button
                 type="button"
