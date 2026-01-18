@@ -36,7 +36,11 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/auth/**",
                     "/api/health",
-                    "/h2-console/**"
+                    "/h2-console/**",
+                    // React 정적 파일 허용
+                    "/", "/index.html", "/static/**",
+                    "/assets/**", "/*.js", "/*.css",
+                    "/favicon.ico", "/manifest.json", "/vite.svg"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

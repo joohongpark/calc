@@ -59,6 +59,62 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
+// 프론트엔드 빌드 결과물 검증 태스크
+tasks.register('validateFrontendBuild') {
+	doFirst {
+		def frontendDistDir = file("${project.rootDir}/../frontend/dist")
+		def indexHtml = file("${frontendDistDir}/index.html")
+		def assetsDir = file("${frontendDistDir}/assets")
+
+		if (!frontendDistDir.exists() || !indexHtml.exists()) {
+			throw new GradleException(
+				"""
+				❌ 프론트엔드 빌드 결과물이 없습니다!
+
+				먼저 프론트엔드를 빌드해주세요:
+				  cd ../frontend
+				  npm install
+				  npm run build
+
+				빌드 결과물 위치: ${frontendDistDir.absolutePath}
+				""".stripIndent()
+			)
+		}
+
+		// assets 폴더 체크
+		if (!assetsDir.exists() || assetsDir.listFiles().length == 0) {
+			throw new GradleException("❌ 프론트엔드 assets 폴더가 비어있습니다!")
+		}
+
+		// index.html 크기 체크 (비어있지 않은지)
+		if (indexHtml.length() < 100) {
+			throw new GradleException("❌ index.html이 비정상적으로 작습니다!")
+		}
+
+		println("✅ 프론트엔드 빌드 검증 완료")
+		println("   - index.html: ${indexHtml.length()} bytes")
+		println("   - assets 파일 개수: ${assetsDir.listFiles().length}개")
+	}
+}
+
+// 프론트엔드 빌드 결과물을 static 폴더로 복사
+tasks.register('copyFrontend', Copy) {
+	from "${project.rootDir}/../frontend/dist"
+	into "${project.buildDir}/resources/main/static"
+
+	dependsOn 'validateFrontendBuild'
+}
+
+// processResources가 copyFrontend에 의존
+tasks.named('processResources') {
+	dependsOn 'copyFrontend'
+}
+
+// bootJar도 명시적으로 의존성 추가
+tasks.named('bootJar') {
+	dependsOn 'copyFrontend'
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }
