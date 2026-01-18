@@ -2,6 +2,7 @@ package com.household.budget.controller;
 
 import com.household.budget.dto.TransactionRequest;
 import com.household.budget.dto.TransactionResponse;
+import com.household.budget.dto.TransactionUpdateRequest;
 import com.household.budget.service.TransactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -68,13 +69,13 @@ public class TransactionController {
     }
 
     /**
-     * 가계부 내역 수정
+     * 가계부 내역 수정 (변경된 필드만)
      */
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<TransactionResponse> updateTransaction(
             Authentication authentication,
             @PathVariable Long id,
-            @Valid @RequestBody TransactionRequest request
+            @RequestBody TransactionUpdateRequest request
     ) {
         TransactionResponse response = transactionService.updateTransaction(
                 authentication.getName(),

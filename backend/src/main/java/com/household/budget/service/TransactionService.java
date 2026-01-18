@@ -2,6 +2,7 @@ package com.household.budget.service;
 
 import com.household.budget.dto.TransactionRequest;
 import com.household.budget.dto.TransactionResponse;
+import com.household.budget.dto.TransactionUpdateRequest;
 import com.household.budget.entity.Currency;
 import com.household.budget.entity.Transaction;
 import com.household.budget.entity.User;
@@ -81,7 +82,7 @@ public class TransactionService {
     }
 
     @Transactional
-    public TransactionResponse updateTransaction(String username, Long id, TransactionRequest request) {
+    public TransactionResponse updateTransaction(String username, Long id, TransactionUpdateRequest request) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
 
@@ -92,19 +93,39 @@ public class TransactionService {
             throw new RuntimeException("접근 권한이 없습니다");
         }
 
-        // 통화 코드를 Currency enum으로 변환
-        Currency currency = Currency.fromString(request.getCurrency());
+        // null이 아닌 필드만 업데이트
+        if (request.getType() != null) {
+            transaction.setType(request.getType());
+        }
+        if (request.getAmount() != null) {
+            transaction.setAmount(request.getAmount());
+        }
+        if (request.getDescription() != null) {
+            transaction.setDescription(request.getDescription());
+        }
+        if (request.getPaymentMethodId() != null) {
+            transaction.setPaymentMethodId(request.getPaymentMethodId());
+        }
+        if (request.getCurrency() != null) {
+            Currency currency = Currency.fromString(request.getCurrency());
+            transaction.setCurrency(currency);
+        }
+        if (request.getOriginalAmount() != null) {
+            transaction.setOriginalAmount(request.getOriginalAmount());
+        }
+        if (request.getDiscountRate() != null) {
+            transaction.setDiscountRate(request.getDiscountRate());
+        }
+        if (request.getExchangeRate() != null) {
+            transaction.setExchangeRate(request.getExchangeRate());
+        }
+        if (request.getTags() != null) {
+            transaction.setTags(request.getTags());
+        }
+        if (request.getTransactionDate() != null) {
+            transaction.setTransactionDate(request.getTransactionDate());
+        }
 
-        transaction.setType(request.getType());
-        transaction.setAmount(request.getAmount());
-        transaction.setDescription(request.getDescription());
-        transaction.setPaymentMethodId(request.getPaymentMethodId()); // 새로운 방식: ID 저장
-        transaction.setCurrency(currency);
-        transaction.setOriginalAmount(request.getOriginalAmount());
-        transaction.setDiscountRate(request.getDiscountRate());
-        transaction.setExchangeRate(request.getExchangeRate());
-        transaction.setTags(request.getTags());
-        transaction.setTransactionDate(request.getTransactionDate());
         transaction.setUpdatedAt(Instant.now());
 
         Map<Long, String> paymentMethodMap = paymentMethodService.getPaymentMethodMap(user.getId());

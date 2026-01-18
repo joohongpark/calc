@@ -62,6 +62,19 @@ export interface TransactionRequest {
   transactionDate: string; // ISO 형식
 }
 
+export interface TransactionUpdateRequest {
+  type?: 'INCOME' | 'EXPENSE';
+  amount?: number;
+  description?: string;
+  paymentMethodId?: number;
+  currency?: string;
+  originalAmount?: number;
+  discountRate?: number;
+  exchangeRate?: number;
+  tags?: string;
+  transactionDate?: string;
+}
+
 export interface TransactionResponse {
   id: number;
   type: 'INCOME' | 'EXPENSE';
@@ -116,8 +129,8 @@ export const transactionAPI = {
   getById: (id: number) =>
     api.get<TransactionResponse>(`/transactions/${id}`),
 
-  update: (id: number, data: TransactionRequest) =>
-    api.put<TransactionResponse>(`/transactions/${id}`, data),
+  update: (id: number, data: TransactionUpdateRequest) =>
+    api.patch<TransactionResponse>(`/transactions/${id}`, data),
 
   delete: (id: number) =>
     api.delete(`/transactions/${id}`),

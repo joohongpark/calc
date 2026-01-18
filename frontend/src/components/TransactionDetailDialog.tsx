@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { transactionAPI, TransactionRequest, TransactionResponse, paymentMethodAPI, PaymentMethodResponse } from '@/lib/api';
+import { transactionAPI, TransactionUpdateRequest, TransactionResponse, paymentMethodAPI, PaymentMethodResponse } from '@/lib/api';
 import { formatKSTDateTime, formatDateStringToKorean } from '@/lib/dateUtils';
 import { getCurrencySymbol } from '@/lib/currencyUtils';
 
@@ -28,7 +28,7 @@ export default function TransactionDetailDialog({
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodResponse[]>([]);
-  const [formData, setFormData] = useState<Partial<TransactionRequest>>({
+  const [formData, setFormData] = useState<TransactionUpdateRequest>({
     type: transaction.type,
     amount: transaction.amount,
     description: transaction.description,
@@ -71,12 +71,63 @@ export default function TransactionDetailDialog({
 
     setLoading(true);
     try {
-      // 태그를 JSON 배열 문자열로 변환
-      const tags = tagsInput
-        ? JSON.stringify(tagsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t))
-        : undefined;
+      // 변경된 필드만 추출
+      const updates: TransactionUpdateRequest = {};
 
-      await transactionAPI.update(transaction.id, { ...formData, tags } as TransactionRequest);
+      if (formData.type !== transaction.type) {
+        updates.type = formData.type;
+      }
+      if (formData.amount !== transaction.amount) {
+        updates.amount = formData.amount;
+      }
+      if (formData.description !== transaction.description) {
+        updates.description = formData.description;
+      }
+      if (formData.paymentMethodId !== transaction.paymentMethodId) {
+        updates.paymentMethodId = formData.paymentMethodId;
+      }
+      if (formData.currency !== transaction.currency) {
+        updates.currency = formData.currency;
+      }
+      if (formData.originalAmount !== transaction.originalAmount) {
+        updates.originalAmount = formData.originalAmount;
+      }
+      if (formData.discountRate !== transaction.discountRate) {
+        updates.discountRate = formData.discountRate;
+      }
+      if (formData.exchangeRate !== transaction.exchangeRate) {
+        updates.exchangeRate = formData.exchangeRate;
+      }
+      if (formData.transactionDate !== transaction.transactionDate) {
+        updates.transactionDate = formData.transactionDate;
+      }
+
+      // 태그 변경 확인
+      const originalTags = transaction.tags
+        ? (() => {
+            try {
+              const parsed = JSON.parse(transaction.tags);
+              return Array.isArray(parsed) ? parsed.join(', ') : '';
+            } catch {
+              return '';
+            }
+          })()
+        : '';
+
+      if (tagsInput !== originalTags) {
+        updates.tags = tagsInput
+          ? JSON.stringify(tagsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t))
+          : undefined;
+      }
+
+      // 변경된 필드가 없으면 요청하지 않음
+      if (Object.keys(updates).length === 0) {
+        alert('변경된 내용이 없습니다.');
+        setLoading(false);
+        return;
+      }
+
+      await transactionAPI.update(transaction.id, updates);
       alert('거래가 수정되었습니다!');
       onSuccess?.();
       setIsEditing(false);
