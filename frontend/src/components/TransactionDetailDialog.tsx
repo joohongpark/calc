@@ -53,6 +53,38 @@ export default function TransactionDetailDialog({
     }
   });
 
+  // transaction prop이 변경될 때마다 상태 업데이트
+  useEffect(() => {
+    setFormData({
+      type: transaction.type,
+      amount: transaction.amount,
+      description: transaction.description,
+      paymentMethodId: transaction.paymentMethodId,
+      currency: transaction.currency,
+      originalAmount: transaction.originalAmount,
+      discountRate: transaction.discountRate,
+      exchangeRate: transaction.exchangeRate,
+      tags: transaction.tags,
+      transactionDate: transaction.transactionDate,
+    });
+
+    // 태그 입력 상태도 업데이트
+    if (!transaction.tags) {
+      setTagsInput('');
+    } else {
+      try {
+        const parsed = JSON.parse(transaction.tags);
+        setTagsInput(Array.isArray(parsed) ? parsed.join(', ') : '');
+      } catch (error) {
+        console.error('Failed to parse tags:', error);
+        setTagsInput('');
+      }
+    }
+
+    // 다이얼로그가 열릴 때 편집 모드 해제
+    setIsEditing(false);
+  }, [transaction]);
+
   // 결제수단 목록 로드
   useEffect(() => {
     const loadPaymentMethods = async () => {
