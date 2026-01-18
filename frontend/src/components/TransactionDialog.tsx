@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { transactionAPI, TransactionRequest } from '@/lib/api';
+import { transactionAPI, TransactionRequest, paymentMethodAPI, PaymentMethodResponse } from '@/lib/api';
 import { getCurrentKSTDate } from '@/lib/dateUtils';
 
 /*
@@ -136,8 +136,8 @@ export default function TransactionDialog({
           {/* Step 3: Payment Method */}
           {step === 'paymentMethod' && (
             <PaymentMethodStep
-              value={formData.paymentMethod}
-              onNext={(value) => handleNext('paymentMethod', value)}
+              value={formData.paymentMethodId}
+              onNext={(value) => handleNext('paymentMethodId', value)}
               onBack={handleBack}
             />
           )}
@@ -246,11 +246,30 @@ function PaymentMethodStep({
   onNext,
   onBack,
 }: {
-  value?: string;
-  onNext: (value: string) => void;
+  value?: number;
+  onNext: (value: number) => void;
   onBack: () => void;
 }) {
-  const paymentMethods = ['신용카드', '체크카드', '현금', '계좌이체', '기타'];
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadPaymentMethods = async () => {
+      try {
+        const response = await paymentMethodAPI.getList();
+        setPaymentMethods(response.data);
+      } catch (error) {
+        console.error('Failed to load payment methods:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPaymentMethods();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center py-8">로딩 중...</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -258,13 +277,13 @@ function PaymentMethodStep({
       <div className="grid grid-cols-2 gap-3">
         {paymentMethods.map((method) => (
           <Button
-            key={method}
+            key={method.id}
             type="button"
-            variant={value === method ? 'default' : 'outline'}
-            onClick={() => onNext(method)}
+            variant={value === method.id ? 'default' : 'outline'}
+            onClick={() => onNext(method.id)}
             className="h-16 text-lg"
           >
-            {method}
+            {method.name}
           </Button>
         ))}
       </div>

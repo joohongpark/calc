@@ -42,8 +42,8 @@ public class Transaction {
     @Column(nullable = false)
     private String description; // 사용처
 
-    @Column(nullable = false)
-    private String paymentMethod; // 결제수단
+    @Column(name = "payment_method_id")
+    private Long paymentMethodId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 3)

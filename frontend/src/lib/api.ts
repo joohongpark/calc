@@ -53,7 +53,7 @@ export interface TransactionRequest {
   type: 'INCOME' | 'EXPENSE';
   amount: number;
   description: string;
-  paymentMethod: string;
+  paymentMethodId: number; // 변경: paymentMethod string → paymentMethodId number
   currency: string;
   originalAmount?: number;
   discountRate?: number;
@@ -67,7 +67,8 @@ export interface TransactionResponse {
   type: 'INCOME' | 'EXPENSE';
   amount: number;
   description: string;
-  paymentMethod: string;
+  paymentMethodId: number; // 결제수단 ID
+  paymentMethod: string; // 결제수단명 (서버에서 매핑된 값)
   currency: string;
   originalAmount?: number;
   discountRate?: number;
@@ -75,6 +76,16 @@ export interface TransactionResponse {
   tags?: string;
   transactionDate: string; // YYYY-MM-DD 형식
   createdAt: string; // ISO 8601 UTC 형식 (예: "2024-01-03T10:30:00Z")
+}
+
+export interface PaymentMethodResponse {
+  id: number;
+  name: string;
+  sortOrder: number;
+}
+
+export interface PaymentMethodRequest {
+  name: string;
 }
 
 // Auth API
@@ -113,4 +124,19 @@ export const transactionAPI = {
 
   getMonthly: (year: number, month: number) =>
     api.get<TransactionResponse[]>(`/transactions/monthly/${year}/${month}`),
+};
+
+// Payment Method API
+export const paymentMethodAPI = {
+  getList: () =>
+    api.get<PaymentMethodResponse[]>('/payment-methods'),
+
+  create: (data: PaymentMethodRequest) =>
+    api.post<PaymentMethodResponse>('/payment-methods', data),
+
+  update: (id: number, data: PaymentMethodRequest) =>
+    api.put<PaymentMethodResponse>(`/payment-methods/${id}`, data),
+
+  delete: (id: number) =>
+    api.delete(`/payment-methods/${id}`),
 };

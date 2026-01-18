@@ -1,5 +1,6 @@
 package com.household.budget.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.household.budget.entity.Transaction.TransactionType;
 import com.household.budget.validation.ValidCurrency;
 import jakarta.validation.constraints.NotBlank;
@@ -10,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TransactionRequest {
 
     @NotNull(message = "거래 유형은 필수입니다")
@@ -21,9 +23,8 @@ public class TransactionRequest {
     @NotBlank(message = "사용처는 필수입니다")
     private String description;
 
-    @NotBlank(message = "결제수단은 필수입니다")
-    private String paymentMethod;
-
+    @NotNull(message = "결제수단은 필수입니다")
+    private Long paymentMethodId;
     @NotBlank(message = "통화는 필수입니다")
     @ValidCurrency
     private String currency = "KRW";

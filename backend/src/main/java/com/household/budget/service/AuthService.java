@@ -21,6 +21,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final PaymentMethodService paymentMethodService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -39,7 +40,10 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .build();
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // 신규 사용자를 위한 기본 결제수단 생성
+        paymentMethodService.createDefaultPaymentMethodsForUser(savedUser.getId());
 
         return AuthResponse.builder()
                 .username(user.getUsername())

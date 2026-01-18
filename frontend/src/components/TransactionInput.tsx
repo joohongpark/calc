@@ -1,10 +1,10 @@
-import { useState, useRef, KeyboardEvent } from 'react';
+import { useState, useRef, KeyboardEvent, useEffect } from 'react';
 import { Paperclip, ArrowUp, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
-import { transactionAPI } from '@/lib/api';
+import { transactionAPI, paymentMethodAPI, PaymentMethodResponse } from '@/lib/api';
 import { getCurrentKSTDate } from '@/lib/dateUtils';
 import { parseAutoInput } from '@/lib/parseUtils';
 
@@ -25,10 +25,30 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
   // Manual 모드 전용 상태
   const [manualAmount, setManualAmount] = useState('');
   const [manualCurrency, setManualCurrency] = useState('KRW');
-  const [manualPaymentMethod, setManualPaymentMethod] = useState('기타');
+  const [manualPaymentMethodId, setManualPaymentMethodId] = useState<number | null>(null);
+
+  // 결제수단 목록
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodResponse[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 결제수단 목록 로드
+  useEffect(() => {
+    const loadPaymentMethods = async () => {
+      try {
+        const response = await paymentMethodAPI.getList();
+        setPaymentMethods(response.data);
+        // 첫 번째 결제수단을 기본값으로 설정
+        if (response.data.length > 0) {
+          setManualPaymentMethodId(response.data[0].id);
+        }
+      } catch (error) {
+        console.error('Failed to load payment methods:', error);
+      }
+    };
+    loadPaymentMethods();
+  }, []);
 
   const handleAddTag = () => {
     if (currentTag.trim() && !tags.includes(currentTag.trim())) {
@@ -105,12 +125,25 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
         currency = manualCurrency;
       }
 
+      // 결제수단 ID 결정
+      let paymentMethodId = manualPaymentMethodId;
+      if (autoMode && paymentMethods.length > 0) {
+        // Auto 모드에서는 첫 번째 결제수단 사용
+        paymentMethodId = paymentMethods[0].id;
+      }
+
+      if (!paymentMethodId) {
+        alert('결제수단을 선택해주세요.');
+        setIsSubmitting(false);
+        return;
+      }
+
       // API 호출
       await transactionAPI.create({
         type,
         amount,
         description,
-        paymentMethod: autoMode ? '기타' : manualPaymentMethod,
+        paymentMethodId, // ID로 변경
         currency, // 파싱된 통화 코드 사용
         tags: tags.length > 0 ? JSON.stringify(tags) : undefined,
         transactionDate: transactionDate
@@ -122,7 +155,9 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
       setAttachedFiles([]);
       setManualAmount('');
       setManualCurrency('KRW');
-      setManualPaymentMethod('기타');
+      if (paymentMethods.length > 0) {
+        setManualPaymentMethodId(paymentMethods[0].id);
+      }
       onSuccess?.();
 
       // textarea에 포커스
@@ -210,15 +245,15 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
           </div>
           <div className="col-span-3">
             <select
-              value={manualPaymentMethod}
-              onChange={(e) => setManualPaymentMethod(e.target.value)}
+              value={manualPaymentMethodId ?? ''}
+              onChange={(e) => setManualPaymentMethodId(Number(e.target.value))}
               className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="기타">기타</option>
-              <option value="현금">현금</option>
-              <option value="신용카드">신용카드</option>
-              <option value="체크카드">체크카드</option>
-              <option value="계좌이체">계좌이체</option>
+              {paymentMethods.map((pm) => (
+                <option key={pm.id} value={pm.id}>
+                  {pm.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>

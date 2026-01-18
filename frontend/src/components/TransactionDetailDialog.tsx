@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { transactionAPI, TransactionRequest, TransactionResponse } from '@/lib/api';
+import { transactionAPI, TransactionRequest, TransactionResponse, paymentMethodAPI, PaymentMethodResponse } from '@/lib/api';
 import { formatKSTDateTime } from '@/lib/dateUtils';
 import { getCurrencySymbol } from '@/lib/currencyUtils';
 
@@ -27,11 +27,12 @@ export default function TransactionDetailDialog({
 }: TransactionDetailDialogProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodResponse[]>([]);
   const [formData, setFormData] = useState<Partial<TransactionRequest>>({
     type: transaction.type,
     amount: transaction.amount,
     description: transaction.description,
-    paymentMethod: transaction.paymentMethod,
+    paymentMethodId: transaction.paymentMethodId,
     currency: transaction.currency,
     originalAmount: transaction.originalAmount,
     discountRate: transaction.discountRate,
@@ -44,6 +45,19 @@ export default function TransactionDetailDialog({
   const [tagsInput, setTagsInput] = useState(
     transaction.tags ? JSON.parse(transaction.tags).join(', ') : ''
   );
+
+  // 결제수단 목록 로드
+  useEffect(() => {
+    const loadPaymentMethods = async () => {
+      try {
+        const response = await paymentMethodAPI.getList();
+        setPaymentMethods(response.data);
+      } catch (error) {
+        console.error('Failed to load payment methods:', error);
+      }
+    };
+    loadPaymentMethods();
+  }, []);
 
   const handleUpdate = async () => {
     setLoading(true);
@@ -89,7 +103,7 @@ export default function TransactionDetailDialog({
       type: transaction.type,
       amount: transaction.amount,
       description: transaction.description,
-      paymentMethod: transaction.paymentMethod,
+      paymentMethodId: transaction.paymentMethodId,
       currency: transaction.currency,
       originalAmount: transaction.originalAmount,
       discountRate: transaction.discountRate,
@@ -113,16 +127,31 @@ export default function TransactionDetailDialog({
         <div className="space-y-4">
           {/* 거래 유형 */}
           <div className="space-y-2">
-            <Label>거래 유형</Label>
-            <div
-              className={`px-4 py-2 rounded-lg text-center font-semibold ${
-                transaction.type === 'INCOME'
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-red-100 text-red-700'
-              }`}
-            >
-              {transaction.type === 'INCOME' ? '수입' : '지출'}
-            </div>
+            <Label htmlFor="type">거래 유형</Label>
+            {isEditing ? (
+              <select
+                id="type"
+                value={formData.type}
+                onChange={(e) =>
+                  setFormData({ ...formData, type: e.target.value as 'INCOME' | 'EXPENSE' })
+                }
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                required
+              >
+                <option value="INCOME">수입</option>
+                <option value="EXPENSE">지출</option>
+              </select>
+            ) : (
+              <div
+                className={`px-4 py-2 rounded-lg text-center font-semibold ${
+                  transaction.type === 'INCOME'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-red-100 text-red-700'
+                }`}
+              >
+                {transaction.type === 'INCOME' ? '수입' : '지출'}
+              </div>
+            )}
           </div>
 
           {/* 금액 */}
@@ -167,14 +196,21 @@ export default function TransactionDetailDialog({
           <div className="space-y-2">
             <Label htmlFor="paymentMethod">결제수단</Label>
             {isEditing ? (
-              <Input
+              <select
                 id="paymentMethod"
-                value={formData.paymentMethod}
+                value={formData.paymentMethodId ?? ''}
                 onChange={(e) =>
-                  setFormData({ ...formData, paymentMethod: e.target.value })
+                  setFormData({ ...formData, paymentMethodId: Number(e.target.value) })
                 }
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 required
-              />
+              >
+                {paymentMethods.map((pm) => (
+                  <option key={pm.id} value={pm.id}>
+                    {pm.name}
+                  </option>
+                ))}
+              </select>
             ) : (
               <div>{transaction.paymentMethod}</div>
             )}
