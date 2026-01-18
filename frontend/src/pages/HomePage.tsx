@@ -12,6 +12,7 @@ import MonthlyCalendar from '@/components/MonthlyCalendar';
 import { transactionAPI, TransactionResponse } from '@/lib/api';
 import { DateTime } from 'luxon';
 import { getCurrencySymbol } from '@/lib/currencyUtils';
+import { formatDateStringToKorean } from '@/lib/dateUtils';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
@@ -202,7 +203,7 @@ export default function HomePage() {
                     <div className="flex-1 min-w-0 pr-2">
                       <p className="font-medium text-sm sm:text-base truncate">{transaction.description}</p>
                       <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                        {transaction.paymentMethod} · {new Date(transaction.transactionDate).toLocaleDateString('ko-KR')}
+                        {transaction.paymentMethod} · {formatDateStringToKorean(transaction.transactionDate)}
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0">

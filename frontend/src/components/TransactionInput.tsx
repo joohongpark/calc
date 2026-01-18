@@ -79,7 +79,7 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
   };
 
   const handleSubmit = async () => {
-    if (!content.trim()) return;
+    if (!content.trim() || isSubmitting) return; // Race condition 방지
 
     setIsSubmitting(true);
     try {
@@ -244,17 +244,23 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
             </select>
           </div>
           <div className="col-span-3">
-            <select
-              value={manualPaymentMethodId ?? ''}
-              onChange={(e) => setManualPaymentMethodId(Number(e.target.value))}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {paymentMethods.map((pm) => (
-                <option key={pm.id} value={pm.id}>
-                  {pm.name}
-                </option>
-              ))}
-            </select>
+            {paymentMethods.length === 0 ? (
+              <div className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-md bg-muted text-muted-foreground">
+                결제수단 없음
+              </div>
+            ) : (
+              <select
+                value={manualPaymentMethodId ?? ''}
+                onChange={(e) => setManualPaymentMethodId(Number(e.target.value))}
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {paymentMethods.map((pm) => (
+                  <option key={pm.id} value={pm.id}>
+                    {pm.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
       )}

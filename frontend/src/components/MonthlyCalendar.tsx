@@ -194,11 +194,10 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction, refresh
                 selectedDateTransactions.map((transaction) => (
                   <div
                     key={transaction.id}
-                    className={`relative rounded-md p-1.5 sm:p-2 pl-4 sm:pl-6 text-xs sm:text-sm cursor-pointer hover:bg-muted/50 transition-colors ${
-                      transaction.type === 'INCOME'
+                    className={`relative rounded-md p-1.5 sm:p-2 pl-4 sm:pl-6 text-xs sm:text-sm cursor-pointer hover:bg-muted/50 transition-colors ${transaction.type === 'INCOME'
                         ? 'bg-green-50 after:bg-green-600'
                         : 'bg-red-50 after:bg-red-600'
-                    } after:absolute after:inset-y-1.5 sm:after:inset-y-2 after:left-1.5 sm:after:left-2 after:w-0.5 sm:after:w-1 after:rounded-full`}
+                      } after:absolute after:inset-y-1.5 sm:after:inset-y-2 after:left-1.5 sm:after:left-2 after:w-0.5 sm:after:w-1 after:rounded-full`}
                     onClick={() => {
                       const luxonDate = DateTime.fromJSDate(selectedDate!).setZone(KOREA_TIMEZONE);
                       onDateClick?.(luxonDate, [transaction]);
@@ -207,9 +206,8 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction, refresh
                     <div className="flex items-center justify-between gap-1">
                       <div className="font-medium truncate flex-1 min-w-0">{transaction.description}</div>
                       <div
-                        className={`font-semibold whitespace-nowrap flex-shrink-0 ${
-                          transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
-                        }`}
+                        className={`font-semibold whitespace-nowrap flex-shrink-0 ${transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
+                          }`}
                       >
                         {transaction.type === 'INCOME' ? '+' : '-'}
                         {transaction.amount.toLocaleString()}{getCurrencySymbol(transaction.currency)}
@@ -217,7 +215,15 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction, refresh
                     </div>
                     <div className="text-muted-foreground text-[10px] sm:text-xs mt-0.5 sm:mt-1 truncate">
                       {transaction.paymentMethod}
-                      {transaction.tags && ` • ${JSON.parse(transaction.tags).join(', ')}`}
+                      {transaction.tags && (() => {
+                        try {
+                          const parsed = JSON.parse(transaction.tags);
+                          return Array.isArray(parsed) ? ` • ${parsed.join(', ')}` : '';
+                        } catch (error) {
+                          console.error('태그 파싱 실패', error);
+                          return '';
+                        }
+                      })()}
                     </div>
                   </div>
                 ))

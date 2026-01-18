@@ -63,6 +63,8 @@ export default function TransactionDialog({
   };
 
   const handleSubmit = async () => {
+    if (loading) return; // Race condition 방지
+
     setLoading(true);
     try {
       // 태그를 JSON 배열 문자열로 변환
@@ -269,6 +271,20 @@ function PaymentMethodStep({
 
   if (loading) {
     return <div className="text-center py-8">로딩 중...</div>;
+  }
+
+  if (paymentMethods.length === 0) {
+    return (
+      <div className="space-y-4">
+        <Label className="text-lg">결제수단을 선택하세요</Label>
+        <div className="text-center py-8 text-muted-foreground">
+          등록된 결제수단이 없습니다. 먼저 결제수단을 등록해주세요.
+        </div>
+        <Button type="button" variant="outline" onClick={onBack} className="w-full">
+          이전
+        </Button>
+      </div>
+    );
   }
 
   return (

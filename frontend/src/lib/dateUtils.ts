@@ -141,3 +141,13 @@ export function formatLocalDate(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+/**
+ * YYYY-MM-DD 형식의 날짜 문자열을 한국어 포맷으로 변환
+ * @param dateString - YYYY-MM-DD 형식 문자열
+ * @returns 한국 날짜 문자열 (예: "2024년 1월 3일")
+ */
+export function formatDateStringToKorean(dateString: string): string {
+  const dt = DateTime.fromFormat(dateString, 'yyyy-MM-dd', { zone: KOREA_TIMEZONE });
+  return dt.toFormat('yyyy년 M월 d일');
+}

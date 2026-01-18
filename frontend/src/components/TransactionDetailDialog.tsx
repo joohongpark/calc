@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { transactionAPI, TransactionRequest, TransactionResponse, paymentMethodAPI, PaymentMethodResponse } from '@/lib/api';
-import { formatKSTDateTime } from '@/lib/dateUtils';
+import { formatKSTDateTime, formatDateStringToKorean } from '@/lib/dateUtils';
 import { getCurrencySymbol } from '@/lib/currencyUtils';
 
 interface TransactionDetailDialogProps {
@@ -42,9 +42,16 @@ export default function TransactionDetailDialog({
   });
 
   // 태그를 문자열 형태로 관리 (JSON 파싱)
-  const [tagsInput, setTagsInput] = useState(
-    transaction.tags ? JSON.parse(transaction.tags).join(', ') : ''
-  );
+  const [tagsInput, setTagsInput] = useState(() => {
+    if (!transaction.tags) return '';
+    try {
+      const parsed = JSON.parse(transaction.tags);
+      return Array.isArray(parsed) ? parsed.join(', ') : '';
+    } catch (error) {
+      console.error('Failed to parse tags:', error);
+      return '';
+    }
+  });
 
   // 결제수단 목록 로드
   useEffect(() => {
@@ -60,6 +67,8 @@ export default function TransactionDetailDialog({
   }, []);
 
   const handleUpdate = async () => {
+    if (loading) return; // Race condition 방지
+
     setLoading(true);
     try {
       // 태그를 JSON 배열 문자열로 변환
@@ -80,6 +89,8 @@ export default function TransactionDetailDialog({
   };
 
   const handleDelete = async () => {
+    if (loading) return; // Race condition 방지
+
     if (!confirm('정말로 이 거래를 삭제하시겠습니까?')) {
       return;
     }
@@ -111,7 +122,13 @@ export default function TransactionDetailDialog({
       tags: transaction.tags,
       transactionDate: transaction.transactionDate,
     });
-    setTagsInput(transaction.tags ? JSON.parse(transaction.tags).join(', ') : '');
+    try {
+      const parsed = transaction.tags ? JSON.parse(transaction.tags) : [];
+      setTagsInput(Array.isArray(parsed) ? parsed.join(', ') : '');
+    } catch (error) {
+      console.error('Failed to parse tags:', error);
+      setTagsInput('');
+    }
     onOpenChange(false);
   };
 
@@ -162,10 +179,12 @@ export default function TransactionDetailDialog({
                 id="amount"
                 type="number"
                 step="0.01"
-                value={formData.amount}
-                onChange={(e) =>
-                  setFormData({ ...formData, amount: parseFloat(e.target.value) })
-                }
+                min="0"
+                value={formData.amount ?? ''}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  setFormData({ ...formData, amount: isNaN(value) ? 0 : value });
+                }}
                 required
               />
             ) : (
@@ -196,21 +215,27 @@ export default function TransactionDetailDialog({
           <div className="space-y-2">
             <Label htmlFor="paymentMethod">결제수단</Label>
             {isEditing ? (
-              <select
-                id="paymentMethod"
-                value={formData.paymentMethodId ?? ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, paymentMethodId: Number(e.target.value) })
-                }
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                required
-              >
-                {paymentMethods.map((pm) => (
-                  <option key={pm.id} value={pm.id}>
-                    {pm.name}
-                  </option>
-                ))}
-              </select>
+              paymentMethods.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  결제수단을 불러오는 중이거나 등록된 결제수단이 없습니다.
+                </div>
+              ) : (
+                <select
+                  id="paymentMethod"
+                  value={formData.paymentMethodId ?? ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, paymentMethodId: Number(e.target.value) })
+                  }
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
+                >
+                  {paymentMethods.map((pm) => (
+                    <option key={pm.id} value={pm.id}>
+                      {pm.name}
+                    </option>
+                  ))}
+                </select>
+              )
             ) : (
               <div>{transaction.paymentMethod}</div>
             )}
@@ -229,7 +254,7 @@ export default function TransactionDetailDialog({
                 }
               />
             ) : (
-              <div>{new Date(transaction.transactionDate).toLocaleDateString('ko-KR')}</div>
+              <div>{formatDateStringToKorean(transaction.transactionDate)}</div>
             )}
           </div>
 
@@ -245,7 +270,18 @@ export default function TransactionDetailDialog({
                   onChange={(e) => setTagsInput(e.target.value)}
                 />
               ) : (
-                <div>{transaction.tags ? JSON.parse(transaction.tags).join(', ') : '-'}</div>
+                <div>
+                  {(() => {
+                    if (!transaction.tags) return '-';
+                    try {
+                      const parsed = JSON.parse(transaction.tags);
+                      return Array.isArray(parsed) ? parsed.join(', ') : '-';
+                    } catch (error) {
+                      console.error('Failed to parse tags:', error);
+                      return '-';
+                    }
+                  })()}
+                </div>
               )}
             </div>
           )}
@@ -264,13 +300,19 @@ export default function TransactionDetailDialog({
                       id="originalAmount"
                       type="number"
                       step="0.01"
-                      value={formData.originalAmount || ''}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          originalAmount: e.target.value ? parseFloat(e.target.value) : undefined,
-                        })
-                      }
+                      min="0"
+                      value={formData.originalAmount ?? ''}
+                      onChange={(e) => {
+                        if (!e.target.value) {
+                          setFormData({ ...formData, originalAmount: undefined });
+                        } else {
+                          const value = parseFloat(e.target.value);
+                          setFormData({
+                            ...formData,
+                            originalAmount: isNaN(value) ? undefined : value
+                          });
+                        }
+                      }}
                     />
                   ) : (
                     <div>{transaction.originalAmount?.toLocaleString() || '-'}</div>
@@ -286,13 +328,20 @@ export default function TransactionDetailDialog({
                       id="discountRate"
                       type="number"
                       step="0.01"
-                      value={formData.discountRate || ''}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          discountRate: e.target.value ? parseFloat(e.target.value) : undefined,
-                        })
-                      }
+                      min="0"
+                      max="100"
+                      value={formData.discountRate ?? ''}
+                      onChange={(e) => {
+                        if (!e.target.value) {
+                          setFormData({ ...formData, discountRate: undefined });
+                        } else {
+                          const value = parseFloat(e.target.value);
+                          setFormData({
+                            ...formData,
+                            discountRate: isNaN(value) ? undefined : value
+                          });
+                        }
+                      }}
                     />
                   ) : (
                     <div>{transaction.discountRate ? `${transaction.discountRate}%` : '-'}</div>
@@ -308,13 +357,19 @@ export default function TransactionDetailDialog({
                       id="exchangeRate"
                       type="number"
                       step="0.0001"
-                      value={formData.exchangeRate || ''}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          exchangeRate: e.target.value ? parseFloat(e.target.value) : undefined,
-                        })
-                      }
+                      min="0"
+                      value={formData.exchangeRate ?? ''}
+                      onChange={(e) => {
+                        if (!e.target.value) {
+                          setFormData({ ...formData, exchangeRate: undefined });
+                        } else {
+                          const value = parseFloat(e.target.value);
+                          setFormData({
+                            ...formData,
+                            exchangeRate: isNaN(value) ? undefined : value
+                          });
+                        }
+                      }}
                     />
                   ) : (
                     <div>{transaction.exchangeRate?.toFixed(4) || '-'}</div>
