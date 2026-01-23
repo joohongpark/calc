@@ -28,8 +28,8 @@ public class TransactionService {
     private final PaymentMethodService paymentMethodService;
 
     @Transactional
-    public TransactionResponse createTransaction(String username, TransactionRequest request) {
-        User user = userRepository.findByUsername(username)
+    public TransactionResponse createTransaction(String email, TransactionRequest request) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
 
         // 통화 코드를 Currency enum으로 변환
@@ -54,8 +54,8 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public Page<TransactionResponse> getTransactions(String username, Pageable pageable) {
-        User user = userRepository.findByUsername(username)
+    public Page<TransactionResponse> getTransactions(String email, Pageable pageable) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
 
         return transactionRepository.findByUserIdOrderByTransactionDateDesc(user.getId(), pageable)
@@ -63,8 +63,8 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public TransactionResponse getTransaction(String username, Long id) {
-        User user = userRepository.findByUsername(username)
+    public TransactionResponse getTransaction(String email, Long id) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
 
         Transaction transaction = transactionRepository.findById(id)
@@ -78,8 +78,8 @@ public class TransactionService {
     }
 
     @Transactional
-    public TransactionResponse updateTransaction(String username, Long id, TransactionUpdateRequest request) {
-        User user = userRepository.findByUsername(username)
+    public TransactionResponse updateTransaction(String email, Long id, TransactionUpdateRequest request) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
 
         Transaction transaction = transactionRepository.findById(id)
@@ -128,8 +128,8 @@ public class TransactionService {
     }
 
     @Transactional
-    public void deleteTransaction(String username, Long id) {
-        User user = userRepository.findByUsername(username)
+    public void deleteTransaction(String email, Long id) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
 
         Transaction transaction = transactionRepository.findById(id)
@@ -143,8 +143,8 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public List<TransactionResponse> getMonthlyTransactions(String username, int year, int month) {
-        User user = userRepository.findByUsername(username)
+    public List<TransactionResponse> getMonthlyTransactions(String email, int year, int month) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
 
         return transactionRepository.findMonthlyTransactions(user.getId(), year, month)

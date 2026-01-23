@@ -53,23 +53,23 @@ public class AuthService {
     }
 
     public String[] login(LoginRequest request) {
-        // 인증
+        // 인증 (이메일로)
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
+                        request.getEmail(),
                         request.getPassword()
                 )
         );
 
-        // 토큰 생성
-        String accessToken = jwtUtil.generateAccessToken(request.getUsername());
-        String refreshToken = jwtUtil.generateRefreshToken(request.getUsername());
+        // 토큰 생성 (이메일로)
+        String accessToken = jwtUtil.generateAccessToken(request.getEmail());
+        String refreshToken = jwtUtil.generateRefreshToken(request.getEmail());
 
         return new String[]{accessToken, refreshToken};
     }
 
-    public User getCurrentUser(String username) {
-        return userRepository.findByUsername(username)
+    public User getCurrentUser(String email) {
+        return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
     }
 }

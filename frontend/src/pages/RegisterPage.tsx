@@ -53,7 +53,7 @@ export default function RegisterPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="username" className="text-sm">사용자 이름</Label>
+              <Label htmlFor="username" className="text-sm">이름</Label>
               <Input
                 id="username"
                 value={username}
@@ -63,6 +63,7 @@ export default function RegisterPage() {
                 maxLength={50}
                 autoFocus
                 className="text-sm sm:text-base"
+                placeholder="홍길동"
               />
             </div>
 

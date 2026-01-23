@@ -56,7 +56,7 @@ public class AuthController {
         refreshCookie.setMaxAge((int) (refreshTokenExpiration / 1000)); // ms -> seconds
         response.addCookie(refreshCookie);
 
-        User user = authService.getCurrentUser(request.getUsername());
+        User user = authService.getCurrentUser(request.getEmail());
 
         return ResponseEntity.ok(AuthResponse.builder()
                 .username(user.getUsername())

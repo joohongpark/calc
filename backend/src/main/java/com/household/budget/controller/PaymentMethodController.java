@@ -99,8 +99,8 @@ public class PaymentMethodController {
 
     // Helper method
     private Long getUserIdFromAuth(Authentication authentication) {
-        String username = authentication.getName();
-        User user = authService.getCurrentUser(username);
+        String email = authentication.getName();
+        User user = authService.getCurrentUser(email);
         return user.getId();
     }
 }
