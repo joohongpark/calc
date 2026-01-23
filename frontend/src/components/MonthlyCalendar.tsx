@@ -8,6 +8,7 @@ import { DayButton } from 'react-day-picker';
 import { PlusIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCurrencySymbol } from '@/lib/currencyUtils';
+import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 
 interface MonthlyCalendarProps {
   onDateClick?: (date: DateTime, transactions: TransactionResponse[]) => void;
@@ -18,6 +19,7 @@ interface MonthlyCalendarProps {
 const KOREA_TIMEZONE = 'Asia/Seoul';
 
 export default function MonthlyCalendar({ onDateClick, onAddTransaction, refreshTrigger }: MonthlyCalendarProps) {
+  const { getPaymentMethodName } = usePaymentMethods();
   const [currentDate, setCurrentDate] = useState(DateTime.now().setZone(KOREA_TIMEZONE));
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
@@ -214,7 +216,7 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction, refresh
                       </div>
                     </div>
                     <div className="text-muted-foreground text-[10px] sm:text-xs mt-0.5 sm:mt-1 truncate">
-                      {transaction.paymentMethod}
+                      {getPaymentMethodName(transaction.paymentMethodId)}
                       {transaction.tags && (() => {
                         try {
                           const parsed = JSON.parse(transaction.tags);

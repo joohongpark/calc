@@ -13,10 +13,12 @@ import { transactionAPI, TransactionResponse } from '@/lib/api';
 import { DateTime } from 'luxon';
 import { getCurrencySymbol } from '@/lib/currencyUtils';
 import { formatDateStringToKorean } from '@/lib/dateUtils';
+import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { getPaymentMethodName } = usePaymentMethods();
   const [isIncomeMode, setIsIncomeMode] = useState(false);
   const [isAutoMode, setIsAutoMode] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -158,7 +160,7 @@ export default function HomePage() {
                     <div className="flex-1 min-w-0 pr-2">
                       <p className="font-medium text-sm sm:text-base truncate">{transaction.description}</p>
                       <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                        {transaction.paymentMethod}
+                        {getPaymentMethodName(transaction.paymentMethodId)}
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0">
@@ -203,7 +205,7 @@ export default function HomePage() {
                     <div className="flex-1 min-w-0 pr-2">
                       <p className="font-medium text-sm sm:text-base truncate">{transaction.description}</p>
                       <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                        {transaction.paymentMethod} · {formatDateStringToKorean(transaction.transactionDate)}
+                        {getPaymentMethodName(transaction.paymentMethodId)} · {formatDateStringToKorean(transaction.transactionDate)}
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0">

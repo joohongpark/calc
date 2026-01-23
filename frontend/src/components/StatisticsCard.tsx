@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { transactionAPI, TransactionResponse } from '@/lib/api';
+import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import {
   PieChart,
   Pie,
@@ -16,6 +17,7 @@ import {
 } from 'recharts';
 
 export default function StatisticsCard() {
+  const { getPaymentMethodName } = usePaymentMethods();
   const [currentDate] = useState(new Date());
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ export default function StatisticsCard() {
   const expenseByPaymentMethod = transactions
     .filter((t) => t.type === 'EXPENSE')
     .reduce((acc, t) => {
-      const method = t.paymentMethod;
+      const method = getPaymentMethodName(t.paymentMethodId);
       acc[method] = (acc[method] || 0) + t.amount;
       return acc;
     }, {} as Record<string, number>);

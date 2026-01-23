@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { transactionAPI, TransactionUpdateRequest, TransactionResponse, paymentMethodAPI, PaymentMethodResponse } from '@/lib/api';
 import { formatKSTDateTime, formatDateStringToKorean } from '@/lib/dateUtils';
 import { getCurrencySymbol } from '@/lib/currencyUtils';
+import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 
 interface TransactionDetailDialogProps {
   open: boolean;
@@ -25,9 +26,14 @@ export default function TransactionDetailDialog({
   transaction,
   onSuccess,
 }: TransactionDetailDialogProps) {
+  const { getPaymentMethodName } = usePaymentMethods();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodResponse[]>([]);
+  const [addMethodDialogOpen, setAddMethodDialogOpen] = useState(false);
+  const [newMethodName, setNewMethodName] = useState('');
+  const [addMethodLoading, setAddMethodLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [formData, setFormData] = useState<TransactionUpdateRequest>({
     type: transaction.type,
     amount: transaction.amount,
@@ -86,15 +92,16 @@ export default function TransactionDetailDialog({
   }, [transaction]);
 
   // 결제수단 목록 로드
+  const loadPaymentMethods = async () => {
+    try {
+      const response = await paymentMethodAPI.getList();
+      setPaymentMethods(response.data);
+    } catch (error) {
+      console.error('Failed to load payment methods:', error);
+    }
+  };
+
   useEffect(() => {
-    const loadPaymentMethods = async () => {
-      try {
-        const response = await paymentMethodAPI.getList();
-        setPaymentMethods(response.data);
-      } catch (error) {
-        console.error('Failed to load payment methods:', error);
-      }
-    };
     loadPaymentMethods();
   }, []);
 
@@ -215,6 +222,46 @@ export default function TransactionDetailDialog({
     onOpenChange(false);
   };
 
+  const handleAddMethod = async () => {
+    if (!newMethodName.trim()) {
+      setErrorMessage('결제수단 이름을 입력해주세요.');
+      return;
+    }
+
+    // 중복 확인
+    const isDuplicate = paymentMethods.some(
+      (method) => method.name.toLowerCase() === newMethodName.trim().toLowerCase()
+    );
+
+    if (isDuplicate) {
+      setErrorMessage('이미 존재하는 결제수단입니다.');
+      return;
+    }
+
+    setAddMethodLoading(true);
+    setErrorMessage('');
+
+    try {
+      await paymentMethodAPI.create({ name: newMethodName.trim() });
+      // 결제수단 목록 다시 불러오기
+      await loadPaymentMethods();
+      // 모달 닫기 및 초기화
+      setAddMethodDialogOpen(false);
+      setNewMethodName('');
+      alert('결제수단이 추가되었습니다!');
+    } catch (error: any) {
+      setErrorMessage(error.response?.data?.message || '결제수단 추가에 실패했습니다.');
+    } finally {
+      setAddMethodLoading(false);
+    }
+  };
+
+  const handleCloseAddDialog = () => {
+    setAddMethodDialogOpen(false);
+    setNewMethodName('');
+    setErrorMessage('');
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
@@ -296,7 +343,19 @@ export default function TransactionDetailDialog({
 
           {/* 결제수단 */}
           <div className="space-y-2">
-            <Label htmlFor="paymentMethod">결제수단</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="paymentMethod">결제수단</Label>
+              {isEditing && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAddMethodDialogOpen(true)}
+                >
+                  추가
+                </Button>
+              )}
+            </div>
             {isEditing ? (
               paymentMethods.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
@@ -320,7 +379,7 @@ export default function TransactionDetailDialog({
                 </select>
               )
             ) : (
-              <div>{transaction.paymentMethod}</div>
+              <div>{getPaymentMethodName(transaction.paymentMethodId)}</div>
             )}
           </div>
 
@@ -512,6 +571,57 @@ export default function TransactionDetailDialog({
           </div>
         </div>
       </DialogContent>
+
+      {/* 결제수단 추가 모달 */}
+      <Dialog open={addMethodDialogOpen} onOpenChange={handleCloseAddDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>결제수단 추가</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newMethodName">결제수단 이름</Label>
+              <Input
+                id="newMethodName"
+                placeholder="예: 신한카드, 현금"
+                value={newMethodName}
+                onChange={(e) => {
+                  setNewMethodName(e.target.value);
+                  setErrorMessage('');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddMethod();
+                  }
+                }}
+                autoFocus
+              />
+              {errorMessage && (
+                <p className="text-sm text-red-600">{errorMessage}</p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseAddDialog}
+                className="flex-1"
+                disabled={addMethodLoading}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleAddMethod}
+                disabled={addMethodLoading}
+                className="flex-1"
+              >
+                {addMethodLoading ? '추가 중...' : '추가'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

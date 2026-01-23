@@ -81,7 +81,6 @@ export interface TransactionResponse {
   amount: number;
   description: string;
   paymentMethodId: number; // 결제수단 ID
-  paymentMethod: string; // 결제수단명 (서버에서 매핑된 값)
   currency: string;
   originalAmount?: number;
   discountRate?: number;

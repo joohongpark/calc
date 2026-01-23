@@ -254,20 +254,65 @@ function PaymentMethodStep({
 }) {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addMethodDialogOpen, setAddMethodDialogOpen] = useState(false);
+  const [newMethodName, setNewMethodName] = useState('');
+  const [addMethodLoading, setAddMethodLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const loadPaymentMethods = async () => {
+    try {
+      const response = await paymentMethodAPI.getList();
+      setPaymentMethods(response.data);
+    } catch (error) {
+      console.error('Failed to load payment methods:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadPaymentMethods = async () => {
-      try {
-        const response = await paymentMethodAPI.getList();
-        setPaymentMethods(response.data);
-      } catch (error) {
-        console.error('Failed to load payment methods:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadPaymentMethods();
   }, []);
+
+  const handleAddMethod = async () => {
+    if (!newMethodName.trim()) {
+      setErrorMessage('결제수단 이름을 입력해주세요.');
+      return;
+    }
+
+    // 중복 확인
+    const isDuplicate = paymentMethods.some(
+      (method) => method.name.toLowerCase() === newMethodName.trim().toLowerCase()
+    );
+
+    if (isDuplicate) {
+      setErrorMessage('이미 존재하는 결제수단입니다.');
+      return;
+    }
+
+    setAddMethodLoading(true);
+    setErrorMessage('');
+
+    try {
+      await paymentMethodAPI.create({ name: newMethodName.trim() });
+      // 결제수단 목록 다시 불러오기
+      await loadPaymentMethods();
+      // 모달 닫기 및 초기화
+      setAddMethodDialogOpen(false);
+      setNewMethodName('');
+      alert('결제수단이 추가되었습니다!');
+    } catch (error: any) {
+      setErrorMessage(error.response?.data?.message || '결제수단 추가에 실패했습니다.');
+    } finally {
+      setAddMethodLoading(false);
+    }
+  };
+
+  const handleCloseAddDialog = () => {
+    setAddMethodDialogOpen(false);
+    setNewMethodName('');
+    setErrorMessage('');
+  };
 
   if (loading) {
     return <div className="text-center py-8">로딩 중...</div>;
@@ -276,20 +321,91 @@ function PaymentMethodStep({
   if (paymentMethods.length === 0) {
     return (
       <div className="space-y-4">
-        <Label className="text-lg">결제수단을 선택하세요</Label>
+        <div className="flex items-center justify-between">
+          <Label className="text-lg">결제수단을 선택하세요</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setAddMethodDialogOpen(true)}
+          >
+            추가
+          </Button>
+        </div>
         <div className="text-center py-8 text-muted-foreground">
           등록된 결제수단이 없습니다. 먼저 결제수단을 등록해주세요.
         </div>
         <Button type="button" variant="outline" onClick={onBack} className="w-full">
           이전
         </Button>
+
+        {/* 결제수단 추가 모달 */}
+        <Dialog open={addMethodDialogOpen} onOpenChange={handleCloseAddDialog}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>결제수단 추가</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="newMethodName">결제수단 이름</Label>
+                <Input
+                  id="newMethodName"
+                  placeholder="예: 신한카드, 현금"
+                  value={newMethodName}
+                  onChange={(e) => {
+                    setNewMethodName(e.target.value);
+                    setErrorMessage('');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddMethod();
+                    }
+                  }}
+                  autoFocus
+                />
+                {errorMessage && (
+                  <p className="text-sm text-red-600">{errorMessage}</p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCloseAddDialog}
+                  className="flex-1"
+                  disabled={addMethodLoading}
+                >
+                  취소
+                </Button>
+                <Button
+                  onClick={handleAddMethod}
+                  disabled={addMethodLoading}
+                  className="flex-1"
+                >
+                  {addMethodLoading ? '추가 중...' : '추가'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <Label className="text-lg">결제수단을 선택하세요</Label>
+      <div className="flex items-center justify-between">
+        <Label className="text-lg">결제수단을 선택하세요</Label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setAddMethodDialogOpen(true)}
+        >
+          추가
+        </Button>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         {paymentMethods.map((method) => (
           <Button
@@ -306,6 +422,57 @@ function PaymentMethodStep({
       <Button type="button" variant="outline" onClick={onBack} className="w-full">
         이전
       </Button>
+
+      {/* 결제수단 추가 모달 */}
+      <Dialog open={addMethodDialogOpen} onOpenChange={handleCloseAddDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>결제수단 추가</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newMethodName">결제수단 이름</Label>
+              <Input
+                id="newMethodName"
+                placeholder="예: 신한카드, 현금"
+                value={newMethodName}
+                onChange={(e) => {
+                  setNewMethodName(e.target.value);
+                  setErrorMessage('');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddMethod();
+                  }
+                }}
+                autoFocus
+              />
+              {errorMessage && (
+                <p className="text-sm text-red-600">{errorMessage}</p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseAddDialog}
+                className="flex-1"
+                disabled={addMethodLoading}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleAddMethod}
+                disabled={addMethodLoading}
+                className="flex-1"
+              >
+                {addMethodLoading ? '추가 중...' : '추가'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

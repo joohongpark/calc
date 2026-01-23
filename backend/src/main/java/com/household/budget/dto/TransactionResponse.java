@@ -20,7 +20,6 @@ public class TransactionResponse {
     private BigDecimal amount;
     private String description;
     private Long paymentMethodId; // 결제수단 ID
-    private String paymentMethod; // 결제수단명 (매핑된 값)
     private String currency;
     private BigDecimal originalAmount;
     private BigDecimal discountRate;
