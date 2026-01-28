@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,10 +8,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { X } from 'lucide-react';
 import { transactionAPI, TransactionUpdateRequest, TransactionResponse, paymentMethodAPI, PaymentMethodResponse } from '@/lib/api';
 import { formatKSTDateTime, formatDateStringToKorean } from '@/lib/dateUtils';
 import { getCurrencySymbol } from '@/lib/currencyUtils';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
+import { useTags } from '@/hooks/useTags';
 
 interface TransactionDetailDialogProps {
   open: boolean;
@@ -27,6 +30,7 @@ export default function TransactionDetailDialog({
   onSuccess,
 }: TransactionDetailDialogProps) {
   const { getPaymentMethodName } = usePaymentMethods();
+  const { tags: allTags } = useTags(); // 기존 태그 목록 가져오기
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodResponse[]>([]);
@@ -47,17 +51,26 @@ export default function TransactionDetailDialog({
     transactionDate: transaction.transactionDate,
   });
 
-  // 태그를 문자열 형태로 관리 (JSON 파싱)
-  const [tagsInput, setTagsInput] = useState(() => {
-    if (!transaction.tags) return '';
+  // 태그를 배열 형태로 관리
+  const [selectedTags, setSelectedTags] = useState<string[]>(() => {
+    if (!transaction.tags) return [];
     try {
       const parsed = JSON.parse(transaction.tags);
-      return Array.isArray(parsed) ? parsed.join(', ') : '';
+      return Array.isArray(parsed) ? parsed : [];
     } catch (error) {
       console.error('Failed to parse tags:', error);
-      return '';
+      return [];
     }
   });
+
+  // 태그 자동완성 관련 상태
+  const [currentTag, setCurrentTag] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // transaction prop이 변경될 때마다 상태 업데이트
   useEffect(() => {
@@ -74,16 +87,16 @@ export default function TransactionDetailDialog({
       transactionDate: transaction.transactionDate,
     });
 
-    // 태그 입력 상태도 업데이트
+    // 태그 상태도 업데이트
     if (!transaction.tags) {
-      setTagsInput('');
+      setSelectedTags([]);
     } else {
       try {
         const parsed = JSON.parse(transaction.tags);
-        setTagsInput(Array.isArray(parsed) ? parsed.join(', ') : '');
+        setSelectedTags(Array.isArray(parsed) ? parsed : []);
       } catch (error) {
         console.error('Failed to parse tags:', error);
-        setTagsInput('');
+        setSelectedTags([]);
       }
     }
 
@@ -104,6 +117,77 @@ export default function TransactionDetailDialog({
   useEffect(() => {
     loadPaymentMethods();
   }, []);
+
+  // 태그 입력값에 따라 추천 태그 필터링
+  useEffect(() => {
+    if (currentTag.trim() && isEditing) {
+      const filtered = allTags
+        .filter(
+          (tag) =>
+            tag.toLowerCase().includes(currentTag.toLowerCase()) &&
+            !selectedTags.includes(tag)
+        )
+        .slice(0, 5);
+      setFilteredSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setFilteredSuggestions([]);
+      setShowSuggestions(false);
+    }
+    setSelectedIndex(-1);
+  }, [currentTag, allTags, selectedTags, isEditing]);
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        tagInputRef.current &&
+        !tagInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleAddTag = (tag?: string) => {
+    const tagToAdd = tag || currentTag.trim();
+    if (tagToAdd && !selectedTags.includes(tagToAdd)) {
+      setSelectedTags([...selectedTags, tagToAdd]);
+      setCurrentTag('');
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedIndex >= 0 && filteredSuggestions[selectedIndex]) {
+        handleAddTag(filteredSuggestions[selectedIndex]);
+      } else if (currentTag.trim()) {
+        handleAddTag();
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) =>
+        prev < filteredSuggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setSelectedIndex(-1);
+    }
+  };
 
   const handleUpdate = async () => {
     if (loading) return; // Race condition 방지
@@ -146,16 +230,17 @@ export default function TransactionDetailDialog({
         ? (() => {
             try {
               const parsed = JSON.parse(transaction.tags);
-              return Array.isArray(parsed) ? parsed.join(', ') : '';
+              return Array.isArray(parsed) ? parsed : [];
             } catch {
-              return '';
+              return [];
             }
           })()
-        : '';
+        : [];
 
-      if (tagsInput !== originalTags) {
-        updates.tags = tagsInput
-          ? JSON.stringify(tagsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t))
+      const tagsChanged = JSON.stringify(selectedTags) !== JSON.stringify(originalTags);
+      if (tagsChanged) {
+        updates.tags = selectedTags.length > 0
+          ? JSON.stringify(selectedTags)
           : undefined;
       }
 
@@ -214,10 +299,10 @@ export default function TransactionDetailDialog({
     });
     try {
       const parsed = transaction.tags ? JSON.parse(transaction.tags) : [];
-      setTagsInput(Array.isArray(parsed) ? parsed.join(', ') : '');
+      setSelectedTags(Array.isArray(parsed) ? parsed : []);
     } catch (error) {
       console.error('Failed to parse tags:', error);
-      setTagsInput('');
+      setSelectedTags([]);
     }
     onOpenChange(false);
   };
@@ -416,15 +501,65 @@ export default function TransactionDetailDialog({
             {/* 태그 */}
             {(isEditing || transaction.tags) && (
               <div className="space-y-2">
-                <Label htmlFor="tags" className="text-sm font-semibold">태그</Label>
+                <Label className="text-sm font-semibold">태그</Label>
                 {isEditing ? (
-                  <Input
-                    id="tags"
-                    placeholder="식비, 외식, 쇼핑"
-                    value={tagsInput}
-                    onChange={(e) => setTagsInput(e.target.value)}
-                    className="h-11 text-base"
-                  />
+                  <div className="relative">
+                    <div className="flex items-center gap-2 flex-wrap border-2 rounded-md p-2 min-h-[42px]">
+                      {selectedTags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="gap-1">
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTag(tag)}
+                            className="hover:text-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                      <input
+                        ref={tagInputRef}
+                        type="text"
+                        placeholder="태그 추가"
+                        value={currentTag}
+                        onChange={(e) => setCurrentTag(e.target.value)}
+                        onKeyDown={handleTagKeyDown}
+                        onBlur={() => {
+                          setTimeout(() => {
+                            if (currentTag.trim() && selectedIndex === -1) {
+                              handleAddTag();
+                            }
+                          }, 200);
+                        }}
+                        onFocus={() => currentTag.trim() && setShowSuggestions(true)}
+                        className="flex-1 min-w-[100px] text-base px-2 py-1 border-0 focus:outline-none focus:ring-0 bg-transparent"
+                      />
+                    </div>
+
+                    {/* 자동완성 드롭다운 */}
+                    {showSuggestions && filteredSuggestions.length > 0 && (
+                      <div
+                        ref={suggestionsRef}
+                        className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-[200px] overflow-y-auto"
+                      >
+                        {filteredSuggestions.map((suggestion, index) => (
+                          <button
+                            key={suggestion}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault(); // onBlur 방지
+                              handleAddTag(suggestion);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${
+                              index === selectedIndex ? 'bg-accent' : ''
+                            }`}
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {(() => {

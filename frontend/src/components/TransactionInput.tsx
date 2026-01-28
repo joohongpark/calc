@@ -7,6 +7,7 @@ import { Switch } from './ui/switch';
 import { transactionAPI, paymentMethodAPI, PaymentMethodResponse } from '@/lib/api';
 import { getCurrentKSTDate } from '@/lib/dateUtils';
 import { parseAutoInput } from '@/lib/parseUtils';
+import { useTags } from '@/hooks/useTags';
 
 interface TransactionInputProps {
   type: 'INCOME' | 'EXPENSE';
@@ -15,12 +16,18 @@ interface TransactionInputProps {
 }
 
 export function TransactionInput({ type, onSuccess, onModeChange }: TransactionInputProps) {
+  const { tags: allTags } = useTags(); // 기존 태그 목록 가져오기
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState('');
   const [autoMode, setAutoMode] = useState(true);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 자동완성 관련 상태
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   // Manual 모드 전용 상태
   const [manualAmount, setManualAmount] = useState('');
@@ -32,6 +39,8 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // 결제수단 목록 로드
   useEffect(() => {
@@ -50,10 +59,48 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
     loadPaymentMethods();
   }, []);
 
-  const handleAddTag = () => {
-    if (currentTag.trim() && !tags.includes(currentTag.trim())) {
-      setTags([...tags, currentTag.trim()]);
+  // 태그 입력값에 따라 추천 태그 필터링
+  useEffect(() => {
+    if (currentTag.trim()) {
+      const filtered = allTags
+        .filter(
+          (tag) =>
+            tag.toLowerCase().includes(currentTag.toLowerCase()) &&
+            !tags.includes(tag)
+        )
+        .slice(0, 5);
+      setFilteredSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setFilteredSuggestions([]);
+      setShowSuggestions(false);
+    }
+    setSelectedIndex(-1);
+  }, [currentTag, allTags, tags]);
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        tagInputRef.current &&
+        !tagInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleAddTag = (tag?: string) => {
+    const tagToAdd = tag || currentTag.trim();
+    if (tagToAdd && !tags.includes(tagToAdd)) {
+      setTags([...tags, tagToAdd]);
       setCurrentTag('');
+      setShowSuggestions(false);
     }
   };
 
@@ -64,7 +111,22 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
   const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleAddTag();
+      if (selectedIndex >= 0 && filteredSuggestions[selectedIndex]) {
+        handleAddTag(filteredSuggestions[selectedIndex]);
+      } else if (currentTag.trim()) {
+        handleAddTag();
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) =>
+        prev < filteredSuggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setSelectedIndex(-1);
     }
   };
 
@@ -181,28 +243,63 @@ export function TransactionInput({ type, onSuccess, onModeChange }: TransactionI
   return (
     <div className="border rounded-lg p-2 sm:p-4 space-y-2 sm:space-y-3">
       {/* 태그 입력 영역 */}
-      <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-        <span className="text-xs sm:text-sm text-muted-foreground">@</span>
-        <input
-          type="text"
-          placeholder="태그 추가"
-          value={currentTag}
-          onChange={(e) => setCurrentTag(e.target.value)}
-          onKeyDown={handleTagKeyDown}
-          onBlur={handleAddTag}
-          className="text-xs sm:text-sm px-1 sm:px-2 py-1 border-0 focus:outline-none focus:ring-0 bg-transparent flex-1 min-w-[80px] sm:min-w-[100px]"
-        />
-        {tags.map((tag) => (
-          <Badge key={tag} variant="secondary" className="gap-1 text-xs">
-            {tag}
-            <button
-              onClick={() => handleRemoveTag(tag)}
-              className="ml-1 hover:bg-secondary-foreground/20 rounded-full"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
-        ))}
+      <div className="relative">
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+          <span className="text-xs sm:text-sm text-muted-foreground">@</span>
+          <input
+            ref={tagInputRef}
+            type="text"
+            placeholder="태그 추가"
+            value={currentTag}
+            onChange={(e) => setCurrentTag(e.target.value)}
+            onKeyDown={handleTagKeyDown}
+            onBlur={() => {
+              // 약간의 딜레이를 두어 클릭 이벤트가 먼저 처리되도록 함
+              setTimeout(() => {
+                if (currentTag.trim() && selectedIndex === -1) {
+                  handleAddTag();
+                }
+              }, 200);
+            }}
+            onFocus={() => currentTag.trim() && setShowSuggestions(true)}
+            className="text-xs sm:text-sm px-1 sm:px-2 py-1 border-0 focus:outline-none focus:ring-0 bg-transparent flex-1 min-w-[80px] sm:min-w-[100px]"
+          />
+          {tags.map((tag) => (
+            <Badge key={tag} variant="secondary" className="gap-1 text-xs">
+              {tag}
+              <button
+                onClick={() => handleRemoveTag(tag)}
+                className="ml-1 hover:bg-secondary-foreground/20 rounded-full"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+
+        {/* 자동완성 드롭다운 */}
+        {showSuggestions && filteredSuggestions.length > 0 && (
+          <div
+            ref={suggestionsRef}
+            className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-[200px] overflow-y-auto"
+          >
+            {filteredSuggestions.map((suggestion, index) => (
+              <button
+                key={suggestion}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault(); // onBlur 방지
+                  handleAddTag(suggestion);
+                }}
+                className={`w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-accent transition-colors ${
+                  index === selectedIndex ? 'bg-accent' : ''
+                }`}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 메인 입력 영역 */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,8 +8,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { X } from 'lucide-react';
 import { transactionAPI, TransactionRequest, paymentMethodAPI, PaymentMethodResponse } from '@/lib/api';
 import { getCurrentKSTDate } from '@/lib/dateUtils';
+import { useTags } from '@/hooks/useTags';
 
 /*
 TransactionDialog 컴포넌트 프로퍼티
@@ -36,13 +39,14 @@ export default function TransactionDialog({
   onSuccess,
   initialDate,
 }: TransactionDialogProps) {
+  const { tags: allTags } = useTags(); // 기존 태그 목록 가져오기
   const [step, setStep] = useState<Step>('amount');
   const [formData, setFormData] = useState<Partial<TransactionRequest>>({
     type,
     currency: 'KRW',
     transactionDate: initialDate || getCurrentKSTDate(), // 전달된 날짜 또는 현재 날짜
   });
-  const [tagsInput, setTagsInput] = useState(''); // 태그 입력용 별도 state
+  const [selectedTags, setSelectedTags] = useState<string[]>([]); // 태그를 배열로 관리
 
   const [loading, setLoading] = useState(false);
 
@@ -68,8 +72,8 @@ export default function TransactionDialog({
     setLoading(true);
     try {
       // 태그를 JSON 배열 문자열로 변환
-      const tags = tagsInput
-        ? JSON.stringify(tagsInput.split(',').map(t => t.trim()).filter(t => t))
+      const tags = selectedTags.length > 0
+        ? JSON.stringify(selectedTags)
         : undefined;
 
       await transactionAPI.create({ ...formData, tags } as TransactionRequest);
@@ -90,7 +94,7 @@ export default function TransactionDialog({
       currency: 'KRW',
       transactionDate: getCurrentKSTDate(),
     });
-    setTagsInput(''); // 태그 입력 초기화
+    setSelectedTags([]); // 태그 초기화
     onOpenChange(false);
   };
 
@@ -177,8 +181,9 @@ export default function TransactionDialog({
             <OptionsStep
               formData={formData}
               onChange={setFormData}
-              tagsInput={tagsInput}
-              onTagsChange={setTagsInput}
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
+              allTags={allTags}
               onSubmit={handleSubmit}
               onBack={handleBack}
               loading={loading}
@@ -509,21 +514,103 @@ function PaymentMethodStep({
 function OptionsStep({
   formData,
   onChange,
-  tagsInput,
+  selectedTags,
   onTagsChange,
+  allTags,
   onSubmit,
   onBack,
   loading,
 }: {
   formData: Partial<TransactionRequest>;
   onChange: (data: Partial<TransactionRequest>) => void;
-  tagsInput: string;
-  onTagsChange: (tags: string) => void;
+  selectedTags: string[];
+  onTagsChange: (tags: string[]) => void;
+  allTags: string[];
   onSubmit: () => void;
   onBack: () => void;
   loading: boolean;
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // 태그 자동완성 관련 상태
+  const [currentTag, setCurrentTag] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // 태그 입력값에 따라 추천 태그 필터링
+  useEffect(() => {
+    if (currentTag.trim()) {
+      const filtered = allTags
+        .filter(
+          (tag) =>
+            tag.toLowerCase().includes(currentTag.toLowerCase()) &&
+            !selectedTags.includes(tag)
+        )
+        .slice(0, 5);
+      setFilteredSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setFilteredSuggestions([]);
+      setShowSuggestions(false);
+    }
+    setSelectedIndex(-1);
+  }, [currentTag, allTags, selectedTags]);
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        tagInputRef.current &&
+        !tagInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleAddTag = (tag?: string) => {
+    const tagToAdd = tag || currentTag.trim();
+    if (tagToAdd && !selectedTags.includes(tagToAdd)) {
+      onTagsChange([...selectedTags, tagToAdd]);
+      setCurrentTag('');
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    onTagsChange(selectedTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedIndex >= 0 && filteredSuggestions[selectedIndex]) {
+        handleAddTag(filteredSuggestions[selectedIndex]);
+      } else if (currentTag.trim()) {
+        handleAddTag();
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) =>
+        prev < filteredSuggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setSelectedIndex(-1);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -549,13 +636,64 @@ function OptionsStep({
       ) : (
         <>
           <div className="space-y-2">
-            <Label htmlFor="tags">태그 (쉼표로 구분)</Label>
-            <Input
-              id="tags"
-              placeholder="식비, 외식"
-              value={tagsInput}
-              onChange={(e) => onTagsChange(e.target.value)}
-            />
+            <Label>태그</Label>
+            <div className="relative">
+              <div className="flex items-center gap-2 flex-wrap border rounded-md p-2 min-h-[42px]">
+                {selectedTags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="gap-1">
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag)}
+                      className="hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                <input
+                  ref={tagInputRef}
+                  type="text"
+                  placeholder="태그 추가"
+                  value={currentTag}
+                  onChange={(e) => setCurrentTag(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  onBlur={() => {
+                    setTimeout(() => {
+                      if (currentTag.trim() && selectedIndex === -1) {
+                        handleAddTag();
+                      }
+                    }, 200);
+                  }}
+                  onFocus={() => currentTag.trim() && setShowSuggestions(true)}
+                  className="flex-1 min-w-[100px] text-sm px-2 py-1 border-0 focus:outline-none focus:ring-0 bg-transparent"
+                />
+              </div>
+
+              {/* 자동완성 드롭다운 */}
+              {showSuggestions && filteredSuggestions.length > 0 && (
+                <div
+                  ref={suggestionsRef}
+                  className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-[200px] overflow-y-auto"
+                >
+                  {filteredSuggestions.map((suggestion, index) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // onBlur 방지
+                        handleAddTag(suggestion);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${
+                        index === selectedIndex ? 'bg-accent' : ''
+                      }`}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
