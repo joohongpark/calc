@@ -105,11 +105,39 @@ export default function TransactionDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            {type === 'INCOME' ? '수입' : '지출'} 추가
+            거래 추가
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* 거래 유형 토글 버튼 */}
+          <div className="flex gap-3 p-1 bg-muted/50 rounded-lg">
+            <Button
+              type="button"
+              variant={formData.type === 'INCOME' ? 'default' : 'ghost'}
+              className={`flex-1 h-11 font-medium transition-all ${
+                formData.type === 'INCOME'
+                  ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
+                  : 'hover:bg-green-50 text-muted-foreground hover:text-green-700'
+              }`}
+              onClick={() => setFormData({ ...formData, type: 'INCOME' })}
+            >
+              수입
+            </Button>
+            <Button
+              type="button"
+              variant={formData.type === 'EXPENSE' ? 'default' : 'ghost'}
+              className={`flex-1 h-11 font-medium transition-all ${
+                formData.type === 'EXPENSE'
+                  ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm'
+                  : 'hover:bg-red-50 text-muted-foreground hover:text-red-700'
+              }`}
+              onClick={() => setFormData({ ...formData, type: 'EXPENSE' })}
+            >
+              지출
+            </Button>
+          </div>
+
           {/* Progress Indicator */}
           <div className="flex gap-2">
             <div className={`h-2 flex-1 rounded ${step === 'amount' ? 'bg-primary' : 'bg-muted'}`} />
