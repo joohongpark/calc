@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { transactionAPI, TransactionResponse } from '@/lib/api';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
+import { useTagColors } from '@/hooks/useTagColors';
 import {
   PieChart,
   Pie,
@@ -18,6 +19,7 @@ import {
 
 export default function StatisticsCard() {
   const { getPaymentMethodName } = usePaymentMethods();
+  const { getColorHex } = useTagColors();
   const [currentDate] = useState(new Date());
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -215,8 +217,8 @@ export default function StatisticsCard() {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {tagData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {tagData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={getColorHex(entry.name)} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value: number | undefined) => (value ?? 0).toLocaleString() + ' 원'} />

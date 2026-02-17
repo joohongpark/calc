@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TransactionResponse, transactionAPI } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, CalendarDayButton } from '@/components/ui/calendar';
@@ -9,25 +9,30 @@ import { PlusIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCurrencySymbol } from '@/lib/currencyUtils';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
+import { parseTags } from '@/lib/tagColors';
+import { useTagColors } from '@/hooks/useTagColors';
+import InlineTagAdder from '@/components/InlineTagAdder';
 
 interface MonthlyCalendarProps {
   onDateClick?: (date: DateTime, transactions: TransactionResponse[]) => void;
   onAddTransaction?: (date: DateTime) => void;
-  refreshTrigger?: number; // 거래 변동 시 리프레시 트리거
+  refreshTrigger?: number;
 }
 
 const KOREA_TIMEZONE = 'Asia/Seoul';
 
 export default function MonthlyCalendar({ onDateClick, onAddTransaction, refreshTrigger }: MonthlyCalendarProps) {
   const { getPaymentMethodName } = usePaymentMethods();
+  const { getColorClass } = useTagColors();
   const [currentDate, setCurrentDate] = useState(DateTime.now().setZone(KOREA_TIMEZONE));
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tagAdderOpenId, setTagAdderOpenId] = useState<number | null>(null);
 
   useEffect(() => {
     loadMonthlyTransactions();
-  }, [currentDate, refreshTrigger]); // refreshTrigger 추가
+  }, [currentDate, refreshTrigger]);
 
   const loadMonthlyTransactions = async () => {
     setLoading(true);
@@ -44,7 +49,6 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction, refresh
   };
 
   const getTransactionsForDate = (date: Date) => {
-    // JavaScript Date를 YYYY-MM-DD 형식으로 변환
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -83,6 +87,37 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction, refresh
       const luxonDate = DateTime.fromJSDate(selectedDate).setZone(KOREA_TIMEZONE);
       onAddTransaction?.(luxonDate);
     }
+  };
+
+  const handleTagAdderSuccess = () => {
+    setTagAdderOpenId(null);
+    loadMonthlyTransactions();
+  };
+
+  const NoTagAnchor = ({ transaction }: { transaction: TransactionResponse }) => {
+    const anchorRef = useRef<HTMLSpanElement>(null);
+    return (
+      <span
+        ref={anchorRef}
+        className="inline-flex items-center gap-0.5 cursor-pointer"
+        title="태그 추가"
+        onClick={(e) => {
+          e.stopPropagation();
+          setTagAdderOpenId(transaction.id);
+        }}
+      >
+        <span className="inline-block w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0 border border-gray-300 border-dashed hover:border-primary hover:bg-primary/10 transition-colors" />
+        <span className="text-muted-foreground/60 hover:text-primary/60 transition-colors">태그 없음</span>
+        {tagAdderOpenId === transaction.id && (
+          <InlineTagAdder
+            transaction={transaction}
+            anchorRef={anchorRef}
+            onSuccess={handleTagAdderSuccess}
+            onClose={() => setTagAdderOpenId(null)}
+          />
+        )}
+      </span>
+    );
   };
 
   const selectedDateTransactions = selectedDate ? getTransactionsForDate(selectedDate) : [];
@@ -215,17 +250,20 @@ export default function MonthlyCalendar({ onDateClick, onAddTransaction, refresh
                         {transaction.amount.toLocaleString()}{getCurrencySymbol(transaction.currency)}
                       </div>
                     </div>
-                    <div className="text-muted-foreground text-[10px] sm:text-xs mt-0.5 sm:mt-1 truncate">
-                      {getPaymentMethodName(transaction.paymentMethodId)}
-                      {transaction.tags && (() => {
-                        try {
-                          const parsed = JSON.parse(transaction.tags);
-                          return Array.isArray(parsed) ? ` • ${parsed.join(', ')}` : '';
-                        } catch (error) {
-                          console.error('태그 파싱 실패', error);
-                          return '';
-                        }
-                      })()}
+                    <div className="text-muted-foreground text-[10px] sm:text-xs mt-0.5 sm:mt-1 flex items-center gap-1 overflow-hidden">
+                      <span className="truncate flex-shrink-0">{getPaymentMethodName(transaction.paymentMethodId)}</span>
+                      <span className="flex items-center gap-1 flex-shrink-0">
+                        {parseTags(transaction.tags).length > 0 ? (
+                          parseTags(transaction.tags).map((tag) => (
+                            <span key={tag} className="inline-flex items-center gap-0.5" title={tag}>
+                              <span className={`inline-block w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0 ${getColorClass(tag)}`} />
+                              <span className="truncate max-w-[60px]">{tag}</span>
+                            </span>
+                          ))
+                        ) : (
+                          <NoTagAnchor transaction={transaction} />
+                        )}
+                      </span>
                     </div>
                   </div>
                 ))

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Label } from "@/components/ui/label"
@@ -9,16 +9,20 @@ import TransactionDialog from '@/components/TransactionDialog';
 import TransactionDetailDialog from '@/components/TransactionDetailDialog';
 import { TransactionInput } from '@/components/TransactionInput';
 import MonthlyCalendar from '@/components/MonthlyCalendar';
+import InlineTagAdder from '@/components/InlineTagAdder';
 import { transactionAPI, TransactionResponse } from '@/lib/api';
 import { DateTime } from 'luxon';
 import { getCurrencySymbol } from '@/lib/currencyUtils';
 import { formatDateStringToKorean } from '@/lib/dateUtils';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
+import { parseTags } from '@/lib/tagColors';
+import { useTagColors } from '@/hooks/useTagColors';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { getPaymentMethodName } = usePaymentMethods();
+  const { getColorClass } = useTagColors();
   const [isIncomeMode, setIsIncomeMode] = useState(false);
   const [isAutoMode, setIsAutoMode] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -28,9 +32,10 @@ export default function HomePage() {
   const [selectedDate, setSelectedDate] = useState<DateTime | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionResponse | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0); // 캘린더 리프레시 트리거
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [addTransactionDialogOpen, setAddTransactionDialogOpen] = useState(false);
   const [addTransactionDate, setAddTransactionDate] = useState<DateTime | null>(null);
+  const [tagAdderOpenId, setTagAdderOpenId] = useState<number | null>(null);
 
   useEffect(() => {
     loadTransactions();
@@ -54,7 +59,7 @@ export default function HomePage() {
 
   const handleTransactionSuccess = () => {
     loadTransactions();
-    setRefreshTrigger(prev => prev + 1); // 캘린더 리프레시
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const handleDateClick = (date: DateTime, dayTransactions: TransactionResponse[]) => {
@@ -71,7 +76,7 @@ export default function HomePage() {
 
   const handleDetailSuccess = () => {
     loadTransactions();
-    setRefreshTrigger(prev => prev + 1); // 캘린더 리프레시
+    setRefreshTrigger(prev => prev + 1);
     setSelectedDate(null);
     setSelectedDateTransactions([]);
   };
@@ -85,6 +90,46 @@ export default function HomePage() {
     loadTransactions();
     setRefreshTrigger(prev => prev + 1);
     setAddTransactionDialogOpen(false);
+  };
+
+  const handleTagAdderSuccess = () => {
+    setTagAdderOpenId(null);
+    handleTransactionSuccess();
+  };
+
+  const TagDots = ({ transaction }: { transaction: TransactionResponse }) => {
+    const anchorRef = useRef<HTMLSpanElement>(null);
+    const tags = parseTags(transaction.tags);
+    if (tags.length > 0) {
+      return (
+        <>
+          {tags.map((tag) => (
+            <span key={tag} className={`inline-block w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${getColorClass(tag)}`} title={tag} />
+          ))}
+        </>
+      );
+    }
+    return (
+      <>
+        <span
+          ref={anchorRef}
+          className="inline-block w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border border-gray-300 border-dashed cursor-pointer hover:border-primary hover:bg-primary/10 transition-colors"
+          title="태그 추가"
+          onClick={(e) => {
+            e.stopPropagation();
+            setTagAdderOpenId(transaction.id);
+          }}
+        />
+        {tagAdderOpenId === transaction.id && (
+          <InlineTagAdder
+            transaction={transaction}
+            anchorRef={anchorRef}
+            onSuccess={handleTagAdderSuccess}
+            onClose={() => setTagAdderOpenId(null)}
+          />
+        )}
+      </>
+    );
   };
 
   return (
@@ -159,9 +204,12 @@ export default function HomePage() {
                   >
                     <div className="flex-1 min-w-0 pr-2">
                       <p className="font-medium text-sm sm:text-base truncate">{transaction.description}</p>
-                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                        {getPaymentMethodName(transaction.paymentMethodId)}
-                      </p>
+                      <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
+                        <span className="truncate">{getPaymentMethodName(transaction.paymentMethodId)}</span>
+                        <span className="flex items-center gap-1 flex-shrink-0">
+                          {<TagDots transaction={transaction} />}
+                        </span>
+                      </div>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p
@@ -204,9 +252,12 @@ export default function HomePage() {
                   >
                     <div className="flex-1 min-w-0 pr-2">
                       <p className="font-medium text-sm sm:text-base truncate">{transaction.description}</p>
-                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                        {getPaymentMethodName(transaction.paymentMethodId)} · {formatDateStringToKorean(transaction.transactionDate)}
-                      </p>
+                      <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
+                        <span className="truncate">{getPaymentMethodName(transaction.paymentMethodId)} · {formatDateStringToKorean(transaction.transactionDate)}</span>
+                        <span className="flex items-center gap-1 flex-shrink-0">
+                          {<TagDots transaction={transaction} />}
+                        </span>
+                      </div>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p
